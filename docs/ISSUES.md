@@ -344,6 +344,10 @@ Fournir un script unique qui vérifie en une commande que toute la stack (locale
 ### #10 · Implémenter sirene_agent.py
 **Labels :** `collecte` `sirene` `sprint-2` `priorité-haute`
 **Estimation :** 3 pts
+
+**Objectif**
+Premier node de collecte du pipeline : interroger l'API Sirene INSEE pour récupérer les établissements correspondant à l'ICP de la campagne en cours (départements + codes NAF chargés par `init_campagne`, #11), et les convertir en objets `Prospect` (#5).
+
 **Endpoint INSEE (NAF et DEPT viennent de `criteres_ciblage`, jamais codés en dur) :**
 ```
 GET https://api.insee.fr/entreprises/sirene/V3.11/siret
@@ -353,11 +357,16 @@ GET https://api.insee.fr/entreprises/sirene/V3.11/siret
 &nombre=100&debut=0
 ```
 **Fonctions :**
-- [ ] `fetch_sirene(etat, api_key)` — node LangChain
-- [ ] `_fetch_etablissements(client, headers, dept, naf, limit)` — pagination
-- [ ] `_parser_etablissement(etab)` — parse → Prospect
+- [ ] `fetch_sirene(etat, api_key)` — node LangChain, itère sur tous les couples (département, code NAF) de l'ICP de la campagne
+- [ ] `_fetch_etablissements(client, headers, dept, naf, limit)` — pagination via `debut`/`nombre`
+- [ ] `_parser_etablissement(etab)` — parse la réponse JSON INSEE → `Prospect` (mapping `effectif_code`/`effectif_estime`, `code_naf`, `date_creation`, adresse)
 
-**Gestion :** Rate limit 429 → sleep 2s + retry (max 3) · Pagination auto
+**Gestion :** Rate limit 429 → sleep 2s + retry (max 3) · Pagination auto · respect du quota INSEE (30 req/min)
+
+**Contraintes**
+- Filtre `etatAdministratifEtablissement:A` obligatoire (établissements actifs uniquement)
+- Aucun code NAF ni département codé en dur — uniquement ceux de `criteres_ciblage` de la campagne (CLAUDE.md règle #3)
+
 **Critères :** 50 prospects (ICP pilote, dept. 75 en exemple) en < 30s · 100% SIRET valides
 
 ---
@@ -449,8 +458,24 @@ Nettoyer et filtrer les prospects avant scoring, en appliquant les exclusions **
 **Labels :** `légal` `bloctel` `compliance` `sprint-2` `priorité-haute`
 **Estimation :** 2 pts
 **⚠️ Lire LEGAL.md avant de commencer.**
+
+**Objectif**
+Implémenter la vérification Bloctel, obligation légale non négociable avant tout appel (CLAUDE.md règle #1, amende jusqu'à 75 000€ en cas de manquement).
+
 **Fonction :** `verifier_batch(numeros: list[str]) -> dict[str, bool]`
-**Critères :** 100 numéros en < 5s · bloctel_ok=False exclu de file_appel · colonne `bloctel_verifie_le` posée pour permettre la re-vérification à 30 jours (voir #35)
+- [ ] Format E.164 obligatoire en entrée · batch de max 10 000 numéros par requête
+- [ ] Retry sur timeout (max 3 tentatives)
+- [ ] Si l'API est indisponible : ne jamais fallback vers « appelable par défaut » — logger un warning critique et laisser `bloctel_ok = NULL`
+
+**Persistance**
+- [ ] Met à jour `prospects.bloctel_ok` et `prospects.bloctel_verifie_le`
+- [ ] Insère une ligne d'audit dans `bloctel_verifications` (table déjà présente dans `docker/postgres/init/01_schema.sql`) : `prospect_id`, `telephone`, `resultat`, `reference_bloctel` — trace de preuve en cas de contrôle
+
+**Contraintes**
+- Trois états pour `bloctel_ok` : `TRUE` (appelable), `FALSE` (interdit, exclu de `file_appel`), `NULL` (non vérifié, également exclu)
+- Prérequis de #14 (nettoyage_agent.py), ré-exécuté tous les 30 jours par le job #35
+
+**Critères :** 100 numéros en < 5s · bloctel_ok=False exclu de file_appel · colonne `bloctel_verifie_le` posée pour permettre la re-vérification à 30 jours (voir #35) · chaque vérification laisse une trace dans `bloctel_verifications`
 
 ---
 
@@ -512,6 +537,18 @@ Donner de la visibilité sur la performance et le coût de chaque source de donn
 ### #19 · Scoring règles métier Python générique (35%)
 **Labels :** `scoring` `sprint-3` `priorité-haute`
 **Estimation :** 2 pts
+
+**Objectif**
+Implémenter la 1ʳᵉ couche du scoring hybride (35% du score final) : un barème Python déterministe, entièrement paramétré par l'ICP de la campagne — aucune constante métier codée en dur.
+
+**Fichier :** `agents/scoring_agent.py` → `_score_regles(prospect, criteres) -> int`
+**Barème (détail complet dans SCORING.md) :**
+- [ ] Contact (max 35 pts) : téléphone (+25), email non blacklisté (+10)
+- [ ] Effectif (max 20 pts) via `_score_effectif(effectif, effectif_min, effectif_max)`
+- [ ] Ancienneté (max 15 pts) via `_score_anciennete(date_creation, anciennete_min_ans)`
+- [ ] Présence digitale (max 10 pts), Géographie (max 10 pts), Mots-clés positifs (max 10 pts)
+- [ ] Pénalités : `_matche_exclusion` (mot entier) → score forcé à 0 · aucun contact → -20 · NAF hors cible → -30
+
 **Voir SCORING.md** pour le barème complet — toutes les valeurs (effectif, ancienneté, exclusions) viennent de `criteres_ciblage`, aucune constante métier codée en dur
 **Critères :** `_score_effectif` et `_score_anciennete` sont des fonctions pures testées indépendamment (pas de dict jamais lu comme dans une version antérieure du barème) · `_matche_exclusion` teste par mot entier, pas par sous-chaîne
 
@@ -520,8 +557,19 @@ Donner de la visibilité sur la performance et le coût de chaque source de donn
 ### #20 · Prompts Claude scoring LLM générés dynamiquement depuis l'ICP (45%)
 **Labels :** `scoring` `llm` `prompt-engineering` `sprint-3` `priorité-haute`
 **Estimation :** 3 pts
+
+**Objectif**
+Implémenter la 2ᵉ couche du scoring hybride (45% du score final, la plus lourde) : un scoring Claude dont le prompt système est **généré dynamiquement** depuis le profil du client et son ICP, pour que le même agent puisse scorer n'importe quel secteur sans changer une ligne de code.
+
 **Fichiers :** `prompts/scorer_system.txt.j2` + `prompts/scorer_user.txt.j2` (templates Jinja, rendus depuis `clients` + `criteres_ciblage`, pas de texte figé)
+**Implémentation :**
+- [ ] Le prompt système intègre `client.produit_vendu`, `criteres.description_icp`, effectif, ancienneté — jamais de secteur/NAF codé en dur dans le texte
+- [ ] Le prompt utilisateur exige un JSON strict (`score`, `justification`, `signaux_positifs`, `signaux_negatifs`, `priorite`)
+- [ ] Parsing robuste du JSON avec fallback neutre (`score: 50`) si le parsing échoue
+- [ ] Prompt caching activé sur le system prompt rendu (`cache_control: ephemeral`)
+
 **Voir SCORING.md** pour les templates complets
+**Contraintes :** modèle Claude configurable via `settings.CLAUDE_SCORING_MODEL`, jamais codé en dur (CLAUDE.md règle #6)
 **Critères :** JSON valide 100% · < 0.003€/prospect · justification > 20 mots · prompt caching activé sur le system prompt rendu (économie ~90% après le 1er appel de la campagne) · modèle Claude configurable via `settings.CLAUDE_SCORING_MODEL`, jamais codé en dur
 
 ---
@@ -622,6 +670,11 @@ Tracer chaque exécution du graphe LangChain (#23) — en particulier les appels
 ### #26 · Tests unitaires scoring (20 cas + mock Claude)
 **Labels :** `tests` `scoring` `sprint-3` `priorité-haute`
 **Estimation :** 2 pts
+
+**Objectif**
+Couvrir par des tests unitaires (mock Claude, pas d'appel API réel) les 3 couches du scoring (#19, #20, #21) et leur agrégation (#22), avec un ICP de test générique — jamais garage-spécifique, pour prouver que le scoring fonctionne pour n'importe quel secteur cible.
+
+**Fichier :** `tests/test_scoring.py`
 **Cas (avec un ICP de test générique, pas garage-spécifique) :**
 - Prospect qui matche parfaitement l'ICP de test → score > 75
 - Prospect en périphérie de l'ICP (effectif/ancienneté limites) → score < 30
@@ -629,6 +682,14 @@ Tracer chaque exécution du graphe LangChain (#23) — en particulier les appels
 - Prospect qualifié sans email (téléphone seul) → score 55-70
 - Mock Claude indisponible → fallback règles
 - Deux ICP de test différents (secteurs distincts) sur les mêmes prospects → scores cohérents avec chaque ICP respectif
+
+**Contraintes**
+- Claude est systématiquement mocké dans ces tests (pas de coût, pas de dépendance réseau)
+- Les fixtures d'ICP de test doivent couvrir au moins deux secteurs différents, pour prouver la généricité du scoring (CLAUDE.md règle #3)
+
+**Critères d'acceptance :**
+- [ ] `pytest tests/test_scoring.py -v` → 100% de réussite sur les 20 cas
+- [ ] Aucun test ne dépend d'une valeur métier codée en dur (NAF, secteur) dans le code de scoring
 
 ---
 
@@ -678,19 +739,50 @@ Vérifier que le scoring hybride (#19-22) produit des résultats fiables sur des
 ### #29 · Configurer cron campagnes automatiques
 **Labels :** `automatisation` `sprint-4` `priorité-moyenne`
 **Estimation :** 1 pt
+
+**Objectif**
+Automatiser le lancement hebdomadaire des campagnes et la sauvegarde de la base, pour que le pipeline tourne sans intervention manuelle une fois en production (#28).
+
 **Crontab :**
 ```bash
 0 6 * * 1 cd /opt/prospection_b2b && python main.py --campagne-id {uuid} >> /var/log/prospection_b2b.log 2>&1
 0 2 * * * docker exec prospection_b2b_postgres pg_dump -U scraper prospection_b2b | gzip > /opt/backups/$(date +%Y%m%d).sql.gz
 ```
 
+**Actions**
+- [ ] `scripts/run_campagne.sh` en wrapper : gère le logging, le code retour, et alerte (log critique) en cas d'échec
+- [ ] Rotation des logs et des backups — pas de purge manuelle
+
+**Contraintes**
+- Le `campagne-id` par cron reste propre à chaque client actif — pas de campagne générique codée en dur (CLAUDE.md règle #3)
+- Un échec du run hebdomadaire doit être visible (log + alerte), pas silencieux
+
+**Critères d'acceptance :**
+- [ ] La campagne se lance automatiquement chaque lundi à 6h sans intervention manuelle
+- [ ] Un backup PostgreSQL compressé est généré chaque nuit à 2h dans `/opt/backups/`
+
 ---
 
 ### #30 · 🚀 Première campagne réelle — 500 prospects (client pilote)
 **Labels :** `campagne` `production` `sprint-4` `priorité-haute`
 **Estimation :** 2 pts
+
+**Objectif**
+Lancer la toute première campagne réelle en production pour le client pilote, sur un volume de 500 prospects — validation grandeur nature de tout le pipeline (#1 à #28) avant de généraliser à d'autres clients.
+
 **Config :** ICP du client pilote (ex. garages IDF : depts 75,92,93,94, NAF 4520Z,4511Z,4531Z,4532Z) · limit 500 — config lue depuis `criteres_ciblage`, pas en dur dans le script
-**Objectifs :** 200+ tél (40%) · 100+ emails (20%) · 150+ qualifiés · export CSV
+
+**Déroulé**
+- [ ] Vérifier que le compte Bloctel professionnel est actif et à jour (#S0-5)
+- [ ] Lancer `python main.py --campagne-id {uuid}` en production (#28)
+- [ ] Suivre l'exécution via LangSmith (#25)
+- [ ] Export CSV des prospects qualifiés en fin de run
+
+**Contraintes**
+- Aucun appel ne doit être passé sur un numéro dont `bloctel_ok` n'est pas strictement `TRUE`
+- Si les cibles ne sont pas atteintes, documenter l'écart avant de relancer
+
+**Objectifs :** 200+ tél (40%) · 100+ emails (20%) · 150+ qualifiés · export CSV livré à l'équipe commerciale
 
 ---
 
@@ -772,16 +864,24 @@ Clore le MVP (9 semaines) en comparant les résultats réels aux cibles définie
 **Labels :** `légal` `bloctel` `compliance` `automatisation` `sprint-4` `priorité-haute`
 **Estimation :** 1 pt
 **⚠️ Lire LEGAL.md → Règle 5.**
-**Contexte :** un numéro vérifié il y a plus de 30 jours ne doit plus être appelable sans re-vérification (obligation légale, amende jusqu'à 75 000€). Ce point n'était couvert par aucune tâche dans le plan initial — corrigé ici.
+
+**Objectif**
+Automatiser la re-vérification Bloctel périodique : un numéro vérifié il y a plus de 30 jours ne doit plus être appelable sans re-vérification (obligation légale, amende jusqu'à 75 000€). Ce point n'était couvert par aucune tâche dans le plan initial — corrigé ici suite à l'audit de conformité.
+
 **Actions :**
 - [ ] Script `scripts/reverifier_bloctel.py` : sélectionne les prospects avec `bloctel_verifie_le` absent ou > 30 jours et appelables (statut qualifié/nouveau)
-- [ ] Repasse `bloctel_ok = NULL` tant que non re-vérifié (donc exclu de `file_appel`)
+- [ ] Réutilise `verifier_batch` (#15) et journalise chaque re-vérification dans `bloctel_verifications` (table d'audit déjà présente dans `docker/postgres/init/01_schema.sql`)
+- [ ] Repasse `bloctel_ok = NULL` tant que non re-vérifié (donc exclu de `file_appel` — la vue filtre déjà sur `bloctel_verifie_le > NOW() - INTERVAL '30 days'`)
 - [ ] Cron quotidien (`crontab` ou `make cron-bloctel`)
 - [ ] Log du nombre de prospects re-vérifiés / repassés en attente
+
+**Contraintes**
+- Ce job doit être déployé en même temps que la stack de production (#28), pas après — obligation légale dès la mise en service
 
 **Critères d'acceptance :**
 - [ ] Un prospect avec `bloctel_verifie_le` > 30 jours disparaît de `file_appel` tant qu'il n'est pas re-vérifié
 - [ ] Le job tourne sans intervention manuelle
+- [ ] Chaque re-vérification laisse une trace dans `bloctel_verifications`
 
 ---
 
@@ -789,16 +889,24 @@ Clore le MVP (9 semaines) en comparant les résultats réels aux cibles définie
 **Labels :** `légal` `rgpd` `compliance` `automatisation` `sprint-4` `priorité-haute`
 **Estimation :** 1 pt
 **⚠️ Lire LEGAL.md → Durée de conservation.**
-**Contexte :** la politique de rétention (invalides 6 mois, qualifiés non convertis 3 ans, appels 1 an, logs 3 mois) était documentée dans LEGAL.md mais sans job pour l'appliquer — corrigé ici.
+
+**Objectif**
+Automatiser l'application de la politique de rétention RGPD (invalides 6 mois, qualifiés non convertis 3 ans, appels 1 an, logs 3 mois) — documentée dans LEGAL.md mais sans job pour l'appliquer jusqu'ici. Corrigé ici suite à l'audit de conformité.
+
 **Actions :**
 - [ ] Script `scripts/purge_rgpd.py` appliquant les 4 règles de rétention
 - [ ] Anonymisation ou suppression selon le type de donnée (voir LEGAL.md)
-- [ ] Journal d'audit des suppressions (nombre de lignes, motif, date)
+- [ ] Vérifier systématiquement `oppositions_rgpd` avant toute action (un SIRET en opposition ne doit plus jamais être recontacté) — table déjà présente dans le schéma
+- [ ] Journal d'audit des suppressions dans `purge_rgpd_log` (`table_cible`, `nb_lignes`, `motif`, déjà présent dans le schéma)
 - [ ] Cron quotidien
+
+**Contraintes**
+- Ce job doit être déployé en même temps que la stack de production (#28), pas après
+- Aucune purge manuelle : uniquement via ce job récurrent (CLAUDE.md règle #9)
 
 **Critères d'acceptance :**
 - [ ] Aucun prospect invalide de plus de 6 mois en base après un run
-- [ ] Journal d'audit consultable
+- [ ] Journal d'audit consultable via `purge_rgpd_log`
 
 ---
 
