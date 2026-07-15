@@ -1,0 +1,168 @@
+erDiagram
+    CLIENTS ||--o{ CRITERES_CIBLAGE : "definit"
+    CLIENTS ||--o{ ICP_PROFILES : "possede"
+    CLIENTS ||--o{ CAMPAGNES : "lance"
+    
+    CRITERES_CIBLAGE ||--o{ CAMPAGNES : "applique"
+    CRITERES_CIBLAGE ||--o| ICP_PROFILES : "genere"
+    
+    ICP_PROFILES ||--o{ CAMPAGNES : "reference"
+    
+    SOURCES ||--o{ PROSPECTS : "fournit"
+    
+    CAMPAGNES ||--o{ PROSPECTS : "contient"
+    
+    PROSPECTS ||--o{ SCORES : "obtient"
+    PROSPECTS ||--o{ APPELS : "recoit"
+    PROSPECTS ||--o{ BLOCTEL_VERIFICATIONS : "subit"
+    
+    CLIENTS {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        text nom_entreprise
+        text secteur
+        text produit_vendu
+        text zone_intervention
+        text contact_nom
+        text contact_email
+        text contact_telephone
+        text statut
+        jsonb meta
+    }
+
+    CRITERES_CIBLAGE {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        uuid client_id FK
+        text nom
+        text description_icp
+        text_array codes_naf
+        text_array departements
+        integer effectif_min
+        integer effectif_max
+        integer anciennete_min_ans
+        boolean exiger_site_web
+        boolean exiger_email
+        text_array mots_cles_positifs
+        text_array mots_cles_negatifs
+        boolean actif
+    }
+
+    ICP_PROFILES {
+        uuid id PK
+        timestamptz created_at
+        uuid client_id FK
+        uuid critere_id FK
+        text nom
+        text description
+        uuid qdrant_point_id
+        text embedding_version
+        boolean actif
+    }
+
+    SOURCES {
+        uuid id PK
+        text nom UK
+        text type
+        text url
+        timestamptz derniere_collecte
+        integer nb_prospects
+    }
+
+    CAMPAGNES {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        uuid client_id FK
+        uuid critere_id FK
+        uuid icp_profile_id FK
+        text nom
+        text statut
+        timestamptz date_lancement
+        integer max_prospects
+        integer prospects_collectes
+        integer prospects_qualifies
+        integer appels_passes
+        integer rdv_obtenus
+        jsonb config_scoring
+    }
+
+    PROSPECTS {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        uuid campagne_id FK
+        uuid source_id FK
+        varchar_14 siret
+        varchar_9 siren
+        text nom_entreprise
+        text nom_dirigeant
+        varchar_6 code_naf
+        text libelle_naf
+        text telephone
+        text telephone_2
+        text email
+        text site_web
+        text adresse
+        varchar_5 code_postal
+        text ville
+        varchar_3 departement
+        double_precision latitude
+        double_precision longitude
+        text effectif
+        varchar_2 effectif_code
+        integer effectif_estime
+        date date_creation
+        text chiffre_affaire
+        integer score_final
+        integer score_regles
+        integer score_llm
+        real score_embedding
+        text statut
+        boolean bloctel_ok
+        timestamptz bloctel_verifie_le
+        boolean doublon
+        uuid qdrant_point_id
+        text notes
+        jsonb raw_data
+    }
+
+    SCORES {
+        uuid id PK
+        timestamptz scored_at
+        uuid prospect_id FK
+        integer score_regles
+        integer score_llm
+        real score_embedding
+        integer score_final
+        text justification_llm
+        text prompt_version
+        text modele_llm
+        jsonb details
+    }
+
+    APPELS {
+        uuid id PK
+        timestamptz created_at
+        uuid prospect_id FK
+        timestamptz date_appel
+        integer duree_secondes
+        text statut
+        text transcript
+        text resume_llm
+        boolean rdv_pris
+        timestamptz rdv_datetime
+        text notes_commercial
+        jsonb metadata
+    }
+
+    BLOCTEL_VERIFICATIONS {
+        uuid id PK
+        timestamptz verifie_le
+        uuid prospect_id FK
+        text telephone
+        boolean resultat
+        text reference_bloctel
+    }
