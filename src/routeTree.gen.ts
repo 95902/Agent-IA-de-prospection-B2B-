@@ -10,11 +10,30 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppelsRouteImport } from './routes/appels'
+import { Route as CampagnesRouteImport } from './routes/campagnes'
+import { Route as ParametreRouteImport } from './routes/parametre'
 import { Route as ProspectsRouteImport } from './routes/prospects'
+import { Route as SupportRouteImport } from './routes/support'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppelsRoute = AppelsRouteImport.update({
+  id: '/appels',
+  path: '/appels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampagnesRoute = CampagnesRouteImport.update({
+  id: '/campagnes',
+  path: '/campagnes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParametreRoute = ParametreRouteImport.update({
+  id: '/parametre',
+  path: '/parametre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProspectsRoute = ProspectsRouteImport.update({
@@ -22,31 +41,60 @@ const ProspectsRoute = ProspectsRouteImport.update({
   path: '/prospects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/parametre': typeof ParametreRoute
   '/prospects': typeof ProspectsRoute
+  '/support': typeof SupportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/parametre': typeof ParametreRoute
   '/prospects': typeof ProspectsRoute
+  '/support': typeof SupportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/parametre': typeof ParametreRoute
   '/prospects': typeof ProspectsRoute
+  '/support': typeof SupportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/prospects'
+  fullPaths:
+    '/' | '/appels' | '/campagnes' | '/parametre' | '/prospects' | '/support'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/prospects'
-  id: '__root__' | '/' | '/prospects'
+  to: '/' | '/appels' | '/campagnes' | '/parametre' | '/prospects' | '/support'
+  id:
+    | '__root__'
+    | '/'
+    | '/appels'
+    | '/campagnes'
+    | '/parametre'
+    | '/prospects'
+    | '/support'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppelsRoute: typeof AppelsRoute
+  CampagnesRoute: typeof CampagnesRoute
+  ParametreRoute: typeof ParametreRoute
   ProspectsRoute: typeof ProspectsRoute
+  SupportRoute: typeof SupportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +106,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appels': {
+      id: '/appels'
+      path: '/appels'
+      fullPath: '/appels'
+      preLoaderRoute: typeof AppelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campagnes': {
+      id: '/campagnes'
+      path: '/campagnes'
+      fullPath: '/campagnes'
+      preLoaderRoute: typeof CampagnesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parametre': {
+      id: '/parametre'
+      path: '/parametre'
+      fullPath: '/parametre'
+      preLoaderRoute: typeof ParametreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prospects': {
       id: '/prospects'
       path: '/prospects'
@@ -65,12 +134,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProspectsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppelsRoute: AppelsRoute,
+  CampagnesRoute: CampagnesRoute,
+  ParametreRoute: ParametreRoute,
   ProspectsRoute: ProspectsRoute,
+  SupportRoute: SupportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

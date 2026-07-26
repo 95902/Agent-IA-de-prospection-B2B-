@@ -4,10 +4,13 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import {
   Users,
   LayoutDashboard,
-  Send,
   Settings,
+  HelpCircle,
   Menu,
   Bot,
+  Plus,
+  Phone,
+  Megaphone,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,8 +25,13 @@ import {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/prospects", label: "Prospects", icon: Users },
-  { to: "/campaigns", label: "Campagnes", icon: Send },
-  { to: "/settings", label: "Paramètres", icon: Settings },
+  { to: "/appels", label: "Appels", icon: Phone },
+  { to: "/campagnes", label: "Campagnes", icon: Megaphone },
+];
+
+const navItemsSettings = [
+  { to: "/parametre", label: "Paramètres", icon: Settings },
+  { to: "/support", label: "Support", icon: HelpCircle },
 ];
 
 const RootLayout = () => {
@@ -77,21 +85,44 @@ const RootLayout = () => {
         </div>
       </header>
       <div className="flex flex-1">
-        <aside className="hidden w-64 border-r bg-card/50 p-4 md:block">
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-primary [&.active]:text-primary-foreground transition-colors"
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
+        <aside className="hidden w-64 border-r bg-card/50 p-4 md:block ">
+          <nav className="flex flex-col gap-1 h-full justify-between">
+            <div className="">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-primary [&.active]:text-primary-foreground transition-colors"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="flex flex-col gap-4">
+              <Button className="rounded-md py-2">
+                <Plus className="h-4 w-4 " />
+                Importer des prospects
+              </Button>
+              <div>
+                {navItemsSettings.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-primary [&.active]:text-primary-foreground transition-colors"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </nav>
         </aside>
         <main className="flex-1 p-4 md:p-8">
