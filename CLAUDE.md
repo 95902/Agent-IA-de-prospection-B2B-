@@ -63,3 +63,5 @@ pytest tests/ -v
 ## Coût mensuel MVP (par client actif) : ~70-90€
 
 Dropcontact 24€ + Tavily 20€ + Claude API ~10€ + VPS OVH ~15-30€ + Bloctel ~5€
+
+@agents.md
