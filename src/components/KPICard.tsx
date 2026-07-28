@@ -1,5 +1,5 @@
 import { type LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 
 export interface KpiCardProps {
   title: string;
@@ -23,7 +23,7 @@ export const KPICard = ({
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 
   return (
-    <Card className="duration-200 h-40 w-57.5 hover:-translate-y-1 rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+    <Card className="duration-200 h-40 w-57.5 hover:-translate-y-1 rounded-xl border p-6 transition-all hover:shadow-md">
       <CardContent className="flex flex-col gap-4 p-0">
         <div className="flex justify-between">
           <div
