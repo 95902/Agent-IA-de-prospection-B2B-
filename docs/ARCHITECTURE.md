@@ -250,7 +250,7 @@ LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=prospection-b2b
 
 # APIs collecte
-INSEE_API_KEY=...              # api.insee.fr — rate limit 30 req/min
+INSEE_API_KEY=...              # portail-api.insee.fr — header X-INSEE-Api-Key-Integration, base api-sirene/3.11, 30 req/min
 TAVILY_API_KEY=tvly-...        # 1000 req/mois gratuit
 BLOCTEL_API_KEY=...            # OBLIGATOIRE LÉGALEMENT
 DROPCONTACT_API_KEY=...        # 24€/mois

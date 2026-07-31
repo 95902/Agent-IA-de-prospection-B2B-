@@ -121,7 +121,7 @@ Valider les choix techniques avec l'équipe (3 personnes) et ouvrir tous les com
 **Actions :**
 - [ ] Bloctel professionnel — ouvrir un compte sur bloctel.gouv.fr (⚠️ délai d'obtention 3-5 jours ouvrés, à démarrer en priorité absolue — voir `docs/LEGAL.md`)
 - [ ] Tavily — ouvrir un compte (1000 requêtes/mois gratuites), récupérer la clé API
-- [ ] API Sirene INSEE — tester l'accès avec une clé gratuite sur api.insee.fr (endpoint `entreprises/sirene/V3.11/siret`)
+- [ ] API Sirene INSEE — créer une application sur `portail-api.insee.fr`, s'abonner à l'API Sirene 3.11 (plan « Accès public »), puis tester l'accès (endpoint `api-sirene/3.11/siret`, auth par header `X-INSEE-Api-Key-Integration`)
 - [ ] Dropcontact — ouvrir un compte (24€/mois), récupérer la clé API
 - [ ] Repo GitHub — créer/vérifier le repo et inviter les 3 collaborateurs de l'équipe
 - [ ] `.env.example` — lister toutes les variables d'environnement nécessaires (clés API ci-dessus + connexions PostgreSQL/Qdrant/Ollama + `CLAUDE_API_KEY`)
@@ -350,12 +350,17 @@ Premier node de collecte du pipeline : interroger l'API Sirene INSEE pour récup
 
 **Endpoint INSEE (NAF et DEPT viennent de `criteres_ciblage`, jamais codés en dur) :**
 ```
-GET https://api.insee.fr/entreprises/sirene/V3.11/siret
+GET https://api.insee.fr/api-sirene/3.11/siret
 ?q=activitePrincipaleEtablissement:{NAF}
   AND codePostalEtablissement:{DEPT}*
   AND etatAdministratifEtablissement:A
 &nombre=100&debut=0
+
+Header : X-INSEE-Api-Key-Integration: {INSEE_API_KEY}
 ```
+> ⚠️ Nouveau portail `portail-api.insee.fr` : base `api-sirene/3.11` (et non
+> l'ancien `entreprises/sirene/V3.11`) + auth par header
+> `X-INSEE-Api-Key-Integration` (et non OAuth2 bearer). Vérifié le 26/07/2026.
 **Fonctions :**
 - [ ] `fetch_sirene(etat, api_key)` — node LangChain, itère sur tous les couples (département, code NAF) de l'ICP de la campagne
 - [ ] `_fetch_etablissements(client, headers, dept, naf, limit)` — pagination via `debut`/`nombre`
