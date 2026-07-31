@@ -34,7 +34,7 @@ Durée   : 9 semaines MVP
 2. **Sources légales uniquement** : Sirene INSEE, Tavily, Pappers. Zéro scraping illégal.
 3. **Aucun ICP codé en dur** : codes NAF, tranche d'effectif, ancienneté, zone géographique, mots-clés positifs/négatifs viennent tous de `criteres_ciblage` / `icp_profiles` en base, jamais de constantes Python. Un client = un ICP = une configuration.
 4. **Exclusions configurables par client** (`criteres_ciblage.mots_cles_negatifs`) — jamais de liste de marques/groupes codée en dur. Un prospect qui matche une exclusion → score = 0 automatiquement.
-5. **Embeddings locaux sur CPU** : Ollama + nomic-embed-text v2. Pas d'API OpenAI pour ça.
+5. **Embeddings locaux sur CPU** : Ollama + `nomic-embed-text` (tag Ollama = v1.5, 137 MB, 768 dims). Pas d'API OpenAI pour ça. Modèle configurable via `OLLAMA_EMBED_MODEL`.
 6. **LLM scorer en cloud** : Claude API uniquement (CPU OVH trop lent pour inférence locale). Voir `docs/SCORING.md` pour le choix de modèle et le prompt caching.
 7. **Pydantic v2 partout** : tous les modèles de données passent par Pydantic avec validators.
 8. **Async partout** : asyncpg pour Postgres, AsyncQdrantClient pour Qdrant, httpx pour HTTP.

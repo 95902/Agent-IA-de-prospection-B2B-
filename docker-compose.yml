@@ -1,0 +1,161 @@
+# =============================================================================
+# docker-compose.yml — Stack dev : PostgreSQL 16 + Qdrant + Ollama + pgAdmin
+# Agent IA de Prospection B2B (multi-secteurs)
+# =============================================================================
+# Socle de l'issue #6. Aucun secret ici : toutes les valeurs sensibles passent
+# par .env (non versionné). Voir .env.example pour la liste des variables.
+# Voir docs/ARCHITECTURE.md (section « Docker Compose — services »).
+#
+# Profils :
+#   default      -> postgres + qdrant + ollama (socle minimal)
+#   dev          -> ajoute pgAdmin (UI Postgres) sur ${PGADMIN_PORT:-5050}
+#   monitoring   -> ajoute Metabase (dashboard KPIs, issue #37) sur ${METABASE_PORT:-3000}
+#
+# Nécessite Docker Compose v2.20+ (tags !override dans docker-compose.prod.yml).
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — BDD relationnelle (prospects, campagnes, scores...)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: prospection_b2b_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-prospection_b2b}
+      POSTGRES_USER: ${POSTGRES_USER:-scraper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Script d'init auto-exécuté au 1er démarrage uniquement (issue #7)
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scraper} -d ${POSTGRES_DB:-prospection_b2b}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prospection_net
+
+  # ---------------------------------------------------------------------------
+  # Qdrant — base vectorielle (embeddings prospects + ICP, issue #9)
+  # ---------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    container_name: prospection_b2b_qdrant
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-changeme_qdrant}
+      QDRANT__LOG_LEVEL: INFO
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"   # HTTP API + healthz
+      - "${QDRANT_GRPC_PORT:-6334}:6334"   # gRPC (AsyncQdrantClient)
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - ./docker/qdrant/config.yaml:/qdrant/config/config.yaml:ro
+    mem_limit: 1g
+    healthcheck:
+      # Qdrant ne fournit ni wget ni curl ni nc : on vérifie la présence du
+      # fichier raft_state.json (écrit par le process Qdrant au démarrage).
+      # /healthz reste vérifiable depuis l'hôte via curl (AC2).
+      test: ["CMD-SHELL", "test -f /qdrant/storage/raft_state.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - prospection_net
+
+  # ---------------------------------------------------------------------------
+  # Ollama — embeddings locaux sur CPU (nomic-embed-text, issue #8)
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: prospection_b2b_ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./docker/ollama/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    mem_limit: 4g
+    healthcheck:
+      # Vérifie que le serveur ET le modèle d'embedding sont présents.
+      test: ["CMD-SHELL", "ollama list | grep -q \"${OLLAMA_EMBED_MODEL:-nomic-embed-text}\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s   # pull ~270MB au 1er boot
+    networks:
+      - prospection_net
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin — UI Postgres (profil dev uniquement)
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: prospection_b2b_pgadmin
+    restart: unless-stopped
+    profiles: ["dev"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@prospection.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme_pgadmin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    mem_limit: 1g
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - prospection_net
+
+  # ---------------------------------------------------------------------------
+  # Metabase — dashboard KPIs (profil monitoring, issue #37)
+  # ---------------------------------------------------------------------------
+  metabase:
+    image: metabase/metabase:latest
+    container_name: prospection_b2b_metabase
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    ports:
+      - "${METABASE_PORT:-3000}:3000"
+    volumes:
+      - metabase_data:/metabase.db
+    mem_limit: 1g
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - prospection_net
+
+# =============================================================================
+# Volumes persistants — noms explicites pour ciblage (reset-db) + survécurent
+# à `docker compose down` (contrainte #6)
+# =============================================================================
+volumes:
+  postgres_data:
+    name: prospection_b2b_postgres_data
+  qdrant_data:
+    name: prospection_b2b_qdrant_data
+  ollama_data:
+    name: prospection_b2b_ollama_data
+  pgadmin_data:
+    name: prospection_b2b_pgadmin_data
+  metabase_data:
+    name: prospection_b2b_metabase_data
+
+# =============================================================================
+# Réseau interne
+# =============================================================================
+networks:
+  prospection_net:
+    driver: bridge

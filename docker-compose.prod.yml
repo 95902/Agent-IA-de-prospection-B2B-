@@ -1,0 +1,35 @@
+# =============================================================================
+# docker-compose.prod.yml — Override production (sécurité VPS, issue #33)
+# =============================================================================
+# Usage :
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   make prod
+#
+# Différence vs dev : les ports sensibles (Postgres, Qdrant, Ollama) sont liés
+# à 127.0.0.1 UNIQUEMENT — aucune exposition hors du VPS. !override remplace
+# intégralement les listes de ports du fichier de base (sinon Compose les
+# fusionne et le port resterait publié sur 0.0.0.0).
+# pgAdmin / Metabase désactivés (pas de profil dev/monitoring en prod).
+#
+# Nécessite Docker Compose v2.20+ (tag !override).
+# =============================================================================
+
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    restart: always
+
+  qdrant:
+    ports: !override
+      - "127.0.0.1:${QDRANT_PORT:-6333}:6333"
+      - "127.0.0.1:${QDRANT_GRPC_PORT:-6334}:6334"
+    restart: always
+    environment:
+      # Plus verbeux en prod pour audits ; UI dashboard désactivée
+      QDRANT__LOG_LEVEL: WARN
+
+  ollama:
+    ports: !override
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+    restart: always
