@@ -1,3 +1,4 @@
+
 # Contexte équipe privé — ne jamais committer (repo public)
 agents.md
 
@@ -7,9 +8,67 @@ agents.md
 .env.*
 !.env.example
 
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets — ne JAMAIS committer le .env réel (seul .env.example est versionné)
+.env
+.env.*
+
 # Python
 __pycache__/
 *.py[cod]
+
 .venv/
 venv/
 .pytest_cache/
+=======
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Données / dumps
+backups/
+*.sql.gz
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude / BMad (artefacts locaux)
+.claude/
+_bmad/
+_bmad-output/
+
+# Scripts locaux
+use-ollama.ps1
+
+
