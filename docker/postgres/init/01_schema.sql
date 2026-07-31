@@ -81,6 +81,10 @@ CREATE TABLE IF NOT EXISTS sources (
     nb_prospects        INTEGER NOT NULL DEFAULT 0
 );
 
+-- Sources initiales. L'issue #7 liste 5 entrées (sirene_insee, tavily,
+-- pages_jaunes, dropcontact, manuel) ; 'pappers' est ajouté car listé comme
+-- source légale dans CLAUDE.md (règle #2). INSERT ... ON CONFLICT DO NOTHING
+-- garantit l'idempotence.
 INSERT INTO sources (nom, type, url) VALUES
     ('sirene_insee', 'api_officielle', 'https://api.insee.fr/entreprises/sirene/V3.11'),
     ('tavily',       'scraping',       'https://api.tavily.com'),
@@ -259,11 +263,19 @@ CREATE TABLE IF NOT EXISTS appels (
 --  INDEX
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_prospects_statut       ON prospects(statut);
+CREATE INDEX IF NOT EXISTS idx_prospects_score        ON prospects(score_final DESC);
 CREATE INDEX IF NOT EXISTS idx_prospects_dept         ON prospects(departement);
 CREATE INDEX IF NOT EXISTS idx_prospects_naf          ON prospects(code_naf);
 CREATE INDEX IF NOT EXISTS idx_prospects_campagne     ON prospects(campagne_id);
 CREATE INDEX IF NOT EXISTS idx_prospects_siren        ON prospects(siren);
 CREATE INDEX IF NOT EXISTS idx_prospects_nom_trgm     ON prospects USING gin(nom_entreprise gin_trgm_ops);
+-- Index partiel : prospects appelables (Bloctel OK) — accélère la vue file_appel (règle #1)
+CREATE INDEX IF NOT EXISTS idx_prospects_bloctel      ON prospects(campagne_id, score_final DESC)
+    WHERE bloctel_ok = TRUE;
+-- Index pour le job de re-vérification Bloctel 30 jours (issue #40) :
+-- sélectionne les prospects appelables dont la vérification expire
+CREATE INDEX IF NOT EXISTS idx_prospects_bloctel_verif ON prospects(bloctel_verifie_le)
+    WHERE bloctel_ok = TRUE OR bloctel_ok IS NULL;
 -- Index partiel qui couvre exactement la vue file_appel (tri inclus)
 CREATE INDEX IF NOT EXISTS idx_prospects_file_appel   ON prospects(campagne_id, score_final DESC, created_at ASC)
     WHERE statut = 'qualifie' AND bloctel_ok = TRUE AND doublon = FALSE AND telephone IS NOT NULL;
@@ -278,10 +290,30 @@ RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
 
+-- CREATE TRIGGER n'est pas idempotent en PostgreSQL (pas de IF NOT EXISTS) ;
+-- on DROP IF EXISTS avant chaque CREATE pour permettre une ré-exécution
+-- du script sur une base déjà initialisée (AC #7).
+DROP TRIGGER IF EXISTS trg_clients_updated_at    ON clients;
+DROP TRIGGER IF EXISTS trg_criteres_updated_at   ON criteres_ciblage;
+DROP TRIGGER IF EXISTS trg_campagnes_updated_at  ON campagnes;
+DROP TRIGGER IF EXISTS trg_prospects_updated_at  ON prospects;
+
 CREATE TRIGGER trg_clients_updated_at    BEFORE UPDATE ON clients          FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_criteres_updated_at   BEFORE UPDATE ON criteres_ciblage FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_campagnes_updated_at  BEFORE UPDATE ON campagnes        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_prospects_updated_at  BEFORE UPDATE ON prospects        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ============================================================
+--  NOTES D'IDEMPOTENCE
+-- ============================================================
+--  Ce script peut être ré-exécuté sur une base déjà initialisée sans erreur
+--  (AC #7) grâce à :
+--   - CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS
+--   - INSERT ... ON CONFLICT DO NOTHING (sources)
+--   - CREATE OR REPLACE FUNCTION / VIEW
+--   - DROP TRIGGER IF EXISTS + CREATE TRIGGER (ci-dessus)
+--  En contexte Docker, /docker-entrypoint-initdb.d ne s'exécute de toute
+--  façon qu'au 1er démarrage d'un volume vierge.
 
 -- ============================================================
 --  VUE — file d'appel (prospects prêts à appeler)
