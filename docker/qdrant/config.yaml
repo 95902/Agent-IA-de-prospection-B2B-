@@ -1,0 +1,38 @@
+# =============================================================================
+# docker/qdrant/config.yaml — Configuration Qdrant (issue #6 + #9)
+# =============================================================================
+# HNSW : index graphe hiérarchique pour la recherche vectorielle rapide.
+# 768 dims = nomic-embed-text v2 (issue #8).
+# Voir docs/qdrant_schema.md pour les collections (icp_profiles,
+# prospects_embeddings) et docs/ARCHITECTURE.md.
+# =============================================================================
+
+service:
+  # Clé API injectée via env (QDRANT__SERVICE__API_KEY) dans docker-compose
+  max_request_size_mb: 32
+  max_workers: 2
+
+# Paramètres HNSW par défaut (peuvent être surchargés par collection via l'API)
+hnsw_config:
+  m: 16              # nombre de voisins par noeud
+  ef_construct: 100  # taille de la file dynamique à la construction
+  full_scan_threshold: 10000
+  max_indexing_threads: 1   # 0 = tous les cœurs → famine CPU du VPS partagé
+  on_disk: false
+  payload_m: 16
+
+# Optimisation de l'index payload (filtres departement/code_naf/score)
+optimizers_config:
+  default_segment_number: 2
+  indexing_threshold: 20000
+  flush_interval_sec: 5
+
+# Niveau de log — surchargé par QDRANT__LOG_LEVEL en prod (WARN)
+log_level: INFO
+
+# Désactive la télémétrie (self-hosted, RGPD)
+telemetry_disabled: true
+
+# Garde-fou performance
+performance:
+  max_search_threads: 2
