@@ -1,7 +1,7 @@
 # Secrets — ne JAMAIS committer le .env réel (seul .env.example est versionné)
 .env
 .env.*
-!.env.example
+
 
 # Python
 __pycache__/
