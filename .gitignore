@@ -1,4 +1,14 @@
 
+# Contexte équipe privé — ne jamais committer (repo public)
+agents.md
+
+# Secrets — clés API réelles : jamais committées.
+# Seul .env.example (sans valeurs) est versionné.
+.env
+.env.*
+!.env.example
+
+
 # Logs
 logs
 *.log
@@ -31,6 +41,11 @@ dist-ssr
 # Python
 __pycache__/
 *.py[cod]
+
+.venv/
+venv/
+.pytest_cache/
+=======
 *.egg-info/
 .venv/
 venv/
@@ -55,4 +70,5 @@ _bmad-output/
 
 # Scripts locaux
 use-ollama.ps1
+
 
