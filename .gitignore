@@ -1,0 +1,28 @@
+# Secrets — ne JAMAIS committer le .env réel (seul .env.example est versionné)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Données / dumps
+backups/
+*.sql.gz
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude / BMad (artefacts locaux)
+.claude/
+_bmad-output/
