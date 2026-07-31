@@ -25,4 +25,8 @@ Thumbs.db
 
 # Claude / BMad (artefacts locaux)
 .claude/
+_bmad/
 _bmad-output/
+
+# Scripts locaux
+use-ollama.ps1
