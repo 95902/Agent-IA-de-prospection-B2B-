@@ -1,0 +1,9 @@
+# Dépendances socle (issues #8 embeddings + #9 db). Python 3.12.
+# Async partout (règle #8) : asyncpg, AsyncQdrantClient, httpx.
+asyncpg>=0.29,<0.31
+# Aligné sur la version du serveur Qdrant du docker-compose (v1.15.x, issue #6).
+# Le client doit suivre le serveur (écart de version mineure toléré : 1 max).
+qdrant-client>=1.15,<1.16
+httpx>=0.27,<0.29
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
