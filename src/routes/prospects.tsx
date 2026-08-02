@@ -14,6 +14,8 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { CampagneHealth } from "@/components/CampagneHealth";
+import { HeaderPropspect } from "@/components/HeaderPropspect";
 
 const KPICardSeed: KpiCardProps[] = [
   {
@@ -310,7 +312,8 @@ const PropspectTableSeed: PropspectTableProps[] = [
 ];
 const Prospects = () => {
   return (
-    <div>
+    <div className="flex flex-col gap-6">
+      <HeaderPropspect />
       <div className="flex flex-wrap gap-4">
         {KPICardSeed.map((kpi, index) => (
           <KPICard
@@ -325,6 +328,7 @@ const Prospects = () => {
           />
         ))}
       </div>
+      <CampagneHealth />
       <ProspectsTable data={PropspectTableSeed} />
     </div>
   );

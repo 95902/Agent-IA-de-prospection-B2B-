@@ -16,9 +16,9 @@ import { Navigation } from "@/components/ui/Navigation";
 const RootLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 h-64">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -52,7 +52,7 @@ const RootLayout = () => {
         <aside className="hidden w-64 border-r bg-card/50 p-4 md:block ">
           <Navigation />
         </aside>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1  md:p-8 bg-blue-50/50 p-6 overflow-y-scroll">
           <Outlet />
         </main>
       </div>

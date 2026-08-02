@@ -87,7 +87,7 @@ export const ProspectsTable = ({ data }: DataTableProps) => {
   };
 
   return (
-    <div className="w-full overflow-hidden border rounded-lg">
+    <div className="w-full overflow-hidden border rounded-lg bg-white">
       <Table className="w-full">
         <TableHeader>
           <TableRow>
