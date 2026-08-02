@@ -22,6 +22,14 @@ COLLECTION_ICP = "icp_profiles"
 _HNSW_M = 16
 _HNSW_EF_CONSTRUCT = 100
 
+# Champs payload à indexer (keyword) — cf. docs/qdrant_schema.md. Sans index,
+# un filtre (ex. `departement` dans search_similar_prospects) fait un scan
+# séquentiel lent, et Qdrant dégrade silencieusement au lieu d'échouer.
+_PAYLOAD_INDEXES = {
+    COLLECTION_PROSPECTS: ("campagne_id", "code_naf", "departement"),
+    COLLECTION_ICP: ("client_id", "critere_id"),
+}
+
 # Colonnes de `prospects` autorisées à l'upsert (whitelist anti-injection :
 # on ne construit jamais de SQL à partir de clés arbitraires du dict).
 _PROSPECT_COLUMNS = (
@@ -87,14 +95,25 @@ async def close() -> None:
 
 
 async def ensure_collections() -> None:
-    """Crée les 2 collections Qdrant si absentes — idempotent (rejouable)."""
+    """Crée les 2 collections Qdrant + leurs index payload si absentes.
+
+    Idempotent : si la collection existe déjà, on ne touche à rien (les index
+    sont créés en même temps que la collection, donc pas de re-création).
+    """
     client = get_qdrant()
     vectors = models.VectorParams(size=EMBEDDING_DIM, distance=models.Distance.COSINE)
     hnsw = models.HnswConfigDiff(m=_HNSW_M, ef_construct=_HNSW_EF_CONSTRUCT)
     for name in (COLLECTION_PROSPECTS, COLLECTION_ICP):
-        if not await client.collection_exists(name):
-            await client.create_collection(
-                collection_name=name, vectors_config=vectors, hnsw_config=hnsw
+        if await client.collection_exists(name):
+            continue
+        await client.create_collection(
+            collection_name=name, vectors_config=vectors, hnsw_config=hnsw
+        )
+        for field in _PAYLOAD_INDEXES[name]:
+            await client.create_payload_index(
+                collection_name=name,
+                field_name=field,
+                field_schema=models.PayloadSchemaType.KEYWORD,
             )
 
 
