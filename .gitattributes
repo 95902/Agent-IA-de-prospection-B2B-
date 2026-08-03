@@ -1,0 +1,5 @@
+# Force les fins de ligne LF pour les scripts shell, quel que soit l'OS.
+# Sans ça, un Git configuré en autocrlf=true (défaut Windows) réécrit les .sh
+# en CRLF au checkout, et /bin/sh dans les containers Linux plante sur les \r
+# (ex. docker/ollama/entrypoint.sh -> boucle de redémarrage). Voir issue #8.
+*.sh text eol=lf
