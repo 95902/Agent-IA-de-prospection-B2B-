@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CampagneHealth } from "@/components/CampagneHealth";
 import { HeaderPropspect } from "@/components/HeaderPropspect";
+import { ChartProspect } from "@/components/ChartProspect";
 
 const KPICardSeed: KpiCardProps[] = [
   {
@@ -328,7 +329,10 @@ const Prospects = () => {
           />
         ))}
       </div>
-      <CampagneHealth />
+      <div className="flex w-full gap-4">
+        <ChartProspect />
+        <CampagneHealth />
+      </div>
       <ProspectsTable data={PropspectTableSeed} />
     </div>
   );

@@ -1,5 +1,6 @@
-import { Badge } from "./ui/badge";
-import { Progress } from "./ui/progress";
+import { Badge } from "./ui/Badge";
+import { Button } from "./ui/Button";
+import { Progress } from "./ui/Progress";
 
 interface Campaign {
   title: string;
@@ -54,7 +55,7 @@ const getBadgeStyle = (status: Campaign["status"]) => {
 const HealthCard = ({ campaign }: { campaign: Campaign }) => {
   return (
     <div
-      className={`p-4 border cursor-pointer flex flex-col hover:bg-[#C6C6CD]/30 gap-4 rounded-lg bg-[#C6C6CD]/10 `}
+      className={`p-4 border border-[#C6C6C] cursor-pointer flex flex-col hover:bg-[#EAE7E9] gap-4 rounded-lg bg-[#FCF8FA] `}
     >
       <div className="flex items-center justify-between">
         <div className="flex flex-col  gap-2">
@@ -88,6 +89,12 @@ export const CampagneHealth = () => {
       {campaignsSeed.map((campaign) => (
         <HealthCard key={campaign.title} campaign={campaign} />
       ))}
+      <Button
+        variant="outline"
+        className="w-full rounded-lg border-[#0051D5]/20"
+      >
+        <span className="text-[#0051D5]"> Voir toutes les campagnes</span>
+      </Button>
     </div>
   );
 };

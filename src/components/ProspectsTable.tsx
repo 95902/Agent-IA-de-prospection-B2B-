@@ -5,7 +5,7 @@ import {
   TableFooter,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/Table";
 import {
   Popover,
   PopoverContent,
@@ -13,12 +13,12 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/Popover";
+import { Badge } from "@/components/ui/Badge";
 import type { PropspectTableProps } from "@/routes/prospects";
-import { Button } from "./ui/button";
+import { Button } from "./ui/Button";
 import { Menu, MoveLeft, MoveRight } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 
 interface DataTableProps {

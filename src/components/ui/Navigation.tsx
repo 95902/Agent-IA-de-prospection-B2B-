@@ -7,7 +7,7 @@ import {
   Phone,
   Megaphone,
 } from "lucide-react";
-import { Button } from "./button";
+import { Button } from "./Button";
 import { Link } from "@tanstack/react-router";
 
 const navItems = [
