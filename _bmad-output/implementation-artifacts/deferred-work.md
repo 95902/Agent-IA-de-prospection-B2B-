@@ -13,3 +13,16 @@
 - Stack dev binds 0.0.0.0 avec creds `changeme` — acceptable en local ; l'exposition prod est gérée par l'override 127.0.0.1.
 - Port gRPC Qdrant 6334 exposé — utilisé par `AsyncQdrantClient` (CLAUDE.md) ; prod le lie à 127.0.0.1.
 - docker-compose v1 (binaire hyphen) non supporté — l'env cible a compose v2 ; documenter.
+## Deferred from: code review of spec-gh-4-modele-icp (2026-08-04)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-gh-4-modele-icp.md`
+  summary: Race condition TOCTOU sur l'upsert applicatif (`_upsert_criteres`/`_upsert_icp_profile` : SELECT-then-INSERT non atomique → doublon si exécutions parallèles).
+  evidence: Le schéma `criteres_ciblage`/`icp_profiles` n'a pas de contrainte UNIQUE sur `(client_id, nom)` (spéc #4 interdit de modifier le schéma #7). Sans `ON CONFLICT` possible, deux seeds parallèles sur le même client+nom créent deux lignes. Fix propre = migration ajoutant `UNIQUE (client_id, nom)` (story séparée, hors scope #4).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-gh-4-modele-icp.md`
+  summary: `clients.contact_email` UNIQUE — collision non catchée (`asyncpg.UniqueViolationError`) si deux clients seedés avec le même email non-null.
+  evidence: `icp_payload.py` n'a pas de validator `EmailStr` et `seed_icp.py` ne catche pas `UniqueViolationError`. Faible car `contact_email` est Optional et souvent None (NULLs distincts en PG). À gérer quand le front saisira de vrais contacts.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-gh-4-modele-icp.md`
+  summary: Garde-fou anti-hardcodage ne détecte pas les hardcodages dynamiques (concaténation `"4520"+"Z"`, f-string, variable externe, `list("4520Z")`).
+  evidence: Limitation structurelle d'un scan AST statique sur les `ast.Constant`. C'est un garde-fou d'alerte, pas une preuve formelle. Documenté dans la docstring du test. Amélioration possible = analyse de dataflow, hors scope MVP.
