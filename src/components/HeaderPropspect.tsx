@@ -14,7 +14,6 @@ export const HeaderPropspect = () => {
       </div>
       <div className="flex items-center  gap-2">
         <Button variant="outline" className="rounded-lg">
-          {" "}
           <Calendar /> Les 30 derniers jours
         </Button>
         <Button className="rounded-lg">

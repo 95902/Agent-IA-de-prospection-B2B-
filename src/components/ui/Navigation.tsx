@@ -11,7 +11,7 @@ import { Button } from "./Button";
 import { Link } from "@tanstack/react-router";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/prospects", label: "Prospects", icon: Users },
   { to: "/appels", label: "Appels", icon: Phone },
   { to: "/campagnes", label: "Campagnes", icon: Megaphone },

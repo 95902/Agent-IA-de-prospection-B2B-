@@ -15,13 +15,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/Popover";
 import { Badge } from "@/components/ui/Badge";
-import type { PropspectTableProps } from "@/routes/prospects";
+import type { PropspectTableProps } from "@/routes";
 import { Button } from "./ui/Button";
 import { Menu, MoveLeft, MoveRight } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 
-interface DataTableProps {
+export interface DataTableProps {
   data: PropspectTableProps[];
 }
 

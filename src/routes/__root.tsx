@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/Sheet";
 import { Navigation } from "@/components/ui/Navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 
 const RootLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -44,7 +44,7 @@ const RootLayout = () => {
           </div>
         </div>
         <div className="flex-1 px-4">
-          <Input placeholder="Enter text" />
+          <Input placeholder="Rechercher..." />
         </div>
         <div className="flex items-center">
           <div className="flex gap-4 px-4 items-center">
