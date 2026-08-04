@@ -1,0 +1,16 @@
+{# Template Jinja — prompt utilisateur du scorer (issue #11 STUB).
+   Données prospect injectées au runtime. Rendu depuis l'ICP du client,
+   jamais figé (CLAUDE.md #3, #6). Implémentation détaillée : issues scoring. #}
+Évalue ce prospect B2B face à l'ICP du client.
+
+Entreprise : {{ nom_entreprise | default("(inconnu)") }}
+SIRET : {{ siret | default("(inconnu)") }}
+Code NAF : {{ code_naf | default("(inconnu)") }} — {{ libelle_naf | default("") }}
+Effectif estimé : {{ effectif_estime | default("(inconnu)") }}
+Ville / Département : {{ ville | default("?") }} ({{ departement | default("??") }})
+Site web : {{ site_web | default("(aucun)") }}
+Mots-clés détectés (enrichissement) : {{ mots_cles_detectes | join(", ") | default("(aucun)") }}
+
+Renvoie un score final sur 100 et une justification courte.
+
+{# TODO(issue dédiée) : schéma JSON de sortie strict à documenter. #}
