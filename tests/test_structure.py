@@ -101,16 +101,23 @@ def test_etat_agent_is_typeddict() -> None:
 
 
 def test_icp_seed_example_has_expected_shape() -> None:
-    """config/icp_seed_example.py expose un dictionnaire ICP bien formé (exemple)."""
-    from config.icp_seed_example import ICP_SEED_EXAMPLE
+    """config/icp_seed_example.py expose un dictionnaire ICP bien formé (exemple).
 
+    NB : issue #4 (déjà sur main) a remplacé le stub `ICP_SEED_EXAMPLE` par
+    `ICP_SEEDS` (dict de dicts, un par secteur pilote). On valide le contrat
+    du seed « garages ».
+    """
+    from config.icp_seed_example import ICP_SEEDS
+
+    assert "garages" in ICP_SEEDS
+    seed = ICP_SEEDS["garages"]
     expected_keys = {
         "nom", "description_icp", "codes_naf", "departements",
         "effectif_min", "effectif_max", "anciennete_min_ans",
         "exiger_site_web", "exiger_email",
         "mots_cles_positifs", "mots_cles_negatifs",
     }
-    assert expected_keys.issubset(ICP_SEED_EXAMPLE.keys())
+    assert expected_keys.issubset(seed.keys())
 
 
 def test_prompt_templates_exist() -> None:

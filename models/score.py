@@ -1,22 +1,22 @@
-"""Modèle ScoreResult — Pydantic v2 (règle #7).
+"""Modèle Pydantic v2 du résultat de scoring (règle #7, issue #10).
 
-Issue #11 — STUB. Implémentation détaillée portée par les issues de scoring
-(cf. docs/SCORING.md). Porte le résultat du scoring hybride 3 couches :
-règles + Claude + embeddings. Le modèle LLM est configurable dans
-config/settings.py (jamais codé en dur — règle #6).
+Agrège les 3 couches du scoring hybride (règles / LLM / embedding) et la sortie
+structurée du LLM (justification, signaux, priorité). Voir `docs/SCORING.md`.
 """
-from __future__ import annotations
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ScoreResult(BaseModel):
-    """STUB — résultat du scoring hybride. À implémenter (issues dédiées)."""
+    # Sous-scores des 3 couches
+    score_regles: int = Field(ge=0, le=100)
+    score_llm: int = Field(ge=0, le=100)
+    score_embedding: float = Field(ge=0.0, le=1.0)  # similarité cosinus
+    score_final: int = Field(ge=0, le=100)
 
-    # TODO: score_regles: int      # 0-100, couche 1
-    # TODO: score_llm: int         # 0-100, couche 2 (Claude)
-    # TODO: score_embedding: float # 0-1,   couche 3 (Qdrant)
-    # TODO: score_final: int       # 0-100, combinaison pondérée
-    # TODO: justification_llm: str
-    # TODO: prompt_version: str
-    pass
+    # Sortie structurée du LLM (cf. docs/SCORING.md)
+    justification_llm: str = ""
+    signaux_positifs: list[str] = Field(default_factory=list)
+    signaux_negatifs: list[str] = Field(default_factory=list)
+    priorite: Literal["haute", "moyenne", "basse"] = "moyenne"

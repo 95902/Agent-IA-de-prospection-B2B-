@@ -1,27 +1,30 @@
-"""État partagé du graphe LangChain (TypedDict).
+"""État partagé du graphe LangChain (règles #7/#8, issue #10).
 
-Issue #11 — STUB. Implémentation détaillée portée par #28.
+`EtatAgent` est le TypedDict passé entre les 6 nodes du pipeline (#28) :
+init_campagne -> fetch_sirene -> enrichir -> nettoyer -> scorer -> sauvegarder.
 
-L'état circule entre les nodes (agents/) et porte les données prospect +
-l'ICP du client (chargé depuis `criteres_ciblage` / `icp_profiles` en base,
-jamais codé en dur — règle #3). Voir docs/ARCHITECTURE.md.
+`total=False` : les champs se remplissent progressivement au fil du pipeline
+(un node lit ce qui existe déjà et ajoute sa contribution). La forme définitive
+sera confirmée à l'assemblage du graphe (#28).
 """
-from __future__ import annotations
-
 from typing import TypedDict
+
+from models.criteres import CriteresCiblage
+from models.prospect import Prospect
 
 
 class EtatAgent(TypedDict, total=False):
-    """STUB — état partagé du pipeline de prospection.
-
-    Champs prévus (détail dans #28) :
-        client_id: UUID du client (icp_profiles).
-        criteres: dict des critères de ciblage chargés depuis la base.
-        prospects: list[dict] des entreprises collectées/enrichies/scorées.
-        erreurs: list[str] des erreurs non fatales rencontrées.
-    """
-
+    # Contexte de campagne (posé par init_campagne, #16)
+    campagne_id: str
     client_id: str
-    criteres: dict
-    prospects: list
-    erreurs: list
+    criteres: CriteresCiblage
+    icp_embedding: list[float] | None
+
+    # Données en cours de traitement
+    prospects: list[Prospect]
+    config_scoring: dict  # poids des 3 couches (depuis campagnes.config_scoring)
+
+    # Suivi d'exécution
+    erreurs: list[str]
+    collectes: int
+    qualifies: int

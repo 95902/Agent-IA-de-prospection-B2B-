@@ -1,29 +1,50 @@
-"""Exemple illustratif d'ICP pour bootstrap d'un nouveau client.
+"""ICP pilote — DONNÉE DE TEST, pas valeur par défaut du produit (issue #4).
 
-Issue #11 — STUB. Ce fichier est un EXEMPLE pédagogique uniquement (cf.
-docs/ARCHITECTURE.md : « Exemple illustratif pour bootstrap d'un nouveau
-client — pas une valeur par défaut utilisée en prod »).
+Ce fichier est l'unique emplacement légitime contenant des valeurs métier ICP
+concrètes (codes NAF, mots-clés sectoriels). Le garde-fou
+`tests/test_no_hardcoded_icp.py` l'exclut explicitement de son scan.
 
-Aucune valeur ici n'est utilisée en production. L'ICP réel de chaque client
-vit dans `criteres_ciblage` / `icp_profiles` en base (CLAUDE.md règle #3 :
-« Un client = un ICP = une configuration »). `scripts/init_icp.py` (#12)
-génère l'embedding ICP d'un client depuis sa config en base, pas depuis ici.
+Il illustre comment amorcer un nouveau client : un vrai client saisira son
+propre ICP via `scripts/seed_icp.py --from-file <son-icp.json>`. Le seed
+« garages » ci-dessous n'est jamais chargé en production comme défaut —
+c'est un exemple pour bootstrap et les tests d'intégration.
 
-Ce fichier montre juste la forme attendue d'un critère de ciblage.
+L'embedding Qdrant de cet ICP n'est PAS généré ici (c'est l'issue #12).
+On ne remplit que `clients` + `criteres_ciblage` + `icp_profiles`.
 """
 from __future__ import annotations
 
-# Exemple illustratif — NON utilisé en prod. L'ICP réel vient de la base.
-ICP_SEED_EXAMPLE = {
-    "nom": "Courtiers en assurance (exemple)",
-    "description_icp": "Cabinet de courtage en assurance, 2-10 salariés, Île-de-France.",
-    "codes_naf": ["6522Z"],
-    "departements": ["75", "92", "93", "94"],
-    "effectif_min": 2,
-    "effectif_max": 10,
-    "anciennete_min_ans": 3,
-    "exiger_site_web": True,
-    "exiger_email": False,
-    "mots_cles_positifs": ["courtage", "assurance"],
-    "mots_cles_negatifs": ["agence bancaire"],
+# ICP pilote : garages indépendants (issue #4, livrable #3).
+# L'objectif de prospection ciblé : garages auto/moto indépendants, petite
+# structure, installés depuis au moins 3 ans (stabilité financière).
+ICP_SEEDS: dict[str, dict] = {
+    "garages": {
+        # --- clients ---
+        "nom_entreprise": "Client Pilote — Garages",
+        "secteur": "Garages automobiles indépendants",
+        "produit_vendu": "Logiciel SaaS de gestion d'atelier",
+        "zone_intervention": "France métropolitaine",
+        "contact_nom": None,
+        "contact_email": None,
+        "contact_telephone": None,
+        # --- criteres_ciblage ---
+        "nom": "Garages indépendants — cible pilote",
+        "description_icp": (
+            "Garages automobiles et motos indépendants, structure artisanale "
+            "de 2 à 15 salariés, en activité depuis au moins 3 ans. Ciblent "
+            "les réparateurs multi-marques plutôt que les concessions."
+        ),
+        # Codes NAF : réparation auto (4520Z), vente auto (4511Z),
+        # réparation moto (4540Z — non inclus, hors cible), entretien/carrosserie
+        # (4531Z), installation équipements auto (4532Z).
+        "codes_naf": ["4520Z", "4511Z", "4531Z", "4532Z"],
+        "departements": [],  # pas de restriction géo dans l'exemple pilote
+        "effectif_min": 2,
+        "effectif_max": 15,
+        "anciennete_min_ans": 3,
+        "exiger_site_web": False,
+        "exiger_email": True,
+        "mots_cles_positifs": ["réparation", "multi-marques", "atelier"],
+        "mots_cles_negatifs": ["concession", "groupe", "centrale"],
+    },
 }

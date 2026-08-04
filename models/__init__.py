@@ -1,5 +1,5 @@
-"""Modèles de données Pydantic v2 (règle #7).
+from models.criteres import CriteresCiblage
+from models.prospect import Prospect
+from models.score import ScoreResult
 
-Issue #11 — STUBS. `prospect.py` (validators SIRET/E.164) et `score.py`
-(ScoreResult) sont implémentés par leurs issues dédiées. Aucun ICP codé en dur.
-"""
+__all__ = ["CriteresCiblage", "Prospect", "ScoreResult"]
