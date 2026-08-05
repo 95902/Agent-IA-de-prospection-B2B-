@@ -110,7 +110,6 @@ const prospectColumns: ColumnConfig[] = [
 ];
 
 export const ProspectsTable = () => {
-  // Utilisation directe des données affichées pour la pagination
   const data = companyTableSeed;
   const [currentPage, setCurrentPage] = useState(1);
   const [rowPerPage, setRowPerPage] = useState(10);
@@ -159,7 +158,6 @@ export const ProspectsTable = () => {
 
   return (
     <div className="w-full h-full flex flex-col justify-between overflow-hidden border rounded-lg bg-white">
-      {/* Zone scrollable dédiée uniquement au tableau */}
       <div className="flex-1 overflow-y-auto w-full">
         <Table className="w-full">
           <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">

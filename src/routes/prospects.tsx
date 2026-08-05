@@ -38,7 +38,7 @@ const Propspect = () => {
   );
   const [nafCode, setNafCode] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
-  const employeeRanges = ["", "1-50", "51-100", "101-200", "201-500"];
+  const employeeRanges = ["1-50", "51-100", "101-200", "201-500"];
 
   const handleReset = () => {
     setNumberOfEmployees(null);
@@ -58,7 +58,7 @@ const Propspect = () => {
         <form>
           <FieldGroup>
             <FieldSet>
-              <div className="flex items-center justify-between mb-4 bg-red-500">
+              <div className="flex items-center justify-between mb-4">
                 <FieldLegend>Filtres</FieldLegend>
                 <Button type="reset" variant="outline" onClick={handleReset}>
                   Réinitialiser
