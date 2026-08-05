@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { ProspectsTable } from "@/components/ProspectsTable";
+import { DesktopTable } from "@/components/DesktopTable";
 import { KPICard, type KpiCardProps } from "@/components/KPICard";
 
 import { createFileRoute } from "@tanstack/react-router";
@@ -333,7 +333,7 @@ const Dashboard = () => {
         <ChartProspect />
         <CampagneHealth />
       </div>
-      <ProspectsTable data={PropspectTableSeed} />
+      <DesktopTable data={PropspectTableSeed} />
     </div>
   );
 };
