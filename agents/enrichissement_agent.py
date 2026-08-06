@@ -123,12 +123,37 @@ def _name_tokens(nom: str, generic: frozenset[str]) -> list[str]:
 
 
 def _name_matches_domain(nom: str, domain: str, generic: frozenset[str]) -> bool:
-    """Le domaine appartient-il vraisemblablement à l'entreprise ? True si sa
-    racine contient un token significatif du nom. False si le nom est trop
-    générique (on ne peut pas confirmer → on préfère ne rien retenir)."""
-    root = domain.rsplit(".", 1)[0].replace("-", "")
+    """Le domaine appartient-il vraisemblablement à l'entreprise ?
+
+    ⚠️ Le match se fait sur des **mots entiers**, jamais par sous-chaîne. Une
+    comparaison par sous-chaîne (`token in racine`) produit des faux positifs
+    massifs — mesuré sur 15 garages parisiens, 3/3 des contacts « trouvés »
+    appartenaient à une autre société :
+
+        BAYARD AUTOMOBILE  → groupebayard.com      (Bayard Presse, éditeur)
+        AMIN BELFQUIH      → aminkader.com         (marque de mode)
+        AUTONOVA           → autonovamtl.com       (concessionnaire à Montréal)
+        THOMAS FISCHER     → galeriethomasfischer.de (galerie d'art allemande)
+
+    On retient donc un domaine seulement si :
+    - un token significatif du nom **est** un segment du domaine
+      (`durand` ↔ `garage-durand.fr`), ou
+    - le nom concaténé **est** un segment ou la racine entière
+      (`GARAGE DURAND` ↔ `garagedurand.fr`).
+
+    Un nom entièrement générique n'est pas confirmable → False (on préfère ne
+    rien retenir : un mauvais email est pire que pas d'email).
+    """
+    root = domain.rsplit(".", 1)[0]
+    segments = [s for s in re.split(r"[^a-z0-9]+", root) if s]
+    if not segments:
+        return False
     tokens = _name_tokens(nom, generic)
-    return any(t in root or root in t for t in tokens) if tokens else False
+    # Variantes concaténées du nom : sans les mots génériques, puis avec (un
+    # domaine légitime peut les inclure — `garagedurand.fr`).
+    joints = {"".join(tokens), "".join(_words(nom))} - {""}
+    candidats = set(segments) | {"".join(segments)}
+    return any(t in candidats for t in tokens) or bool(joints & candidats)
 
 
 # --- Extraction -------------------------------------------------------------

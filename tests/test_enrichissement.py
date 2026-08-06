@@ -149,11 +149,37 @@ def test_generic_tokens_come_from_icp_not_code():
 # --- Filtre de précision (page = bonne entreprise) --------------------------
 def test_name_matches_domain():
     assert ea._name_matches_domain("Garagex Pro", "garagex.fr", GARAGES)
-    assert ea._name_matches_domain("BAYARD AUTOMOBILE", "groupe-bayard.com", GARAGES)
+    # token significatif == segment du domaine
+    assert ea._name_matches_domain("GARAGE DURAND", "garage-durand.fr", GARAGES)
+    # nom concaténé == racine (domaine sans tiret)
+    assert ea._name_matches_domain("GARAGE DURAND", "garagedurand.fr", GARAGES)
     assert not ea._name_matches_domain("INTEGRAL PARE BRISE", "carygroup.com", GARAGES)
     assert not ea._name_matches_domain("XAVIER SUZZONI", "essec.edu", GARAGES)
     # nom 100 % sectoriel → non confirmable → False (on préfère ne rien retenir)
     assert not ea._name_matches_domain("Garage Auto", "garage-auto-durand.fr", GARAGES)
+
+
+@pytest.mark.parametrize("nom,domaine,quoi", [
+    ("BAYARD AUTOMOBILE", "groupebayard.com", "Bayard Presse, éditeur"),
+    ("AMIN BELFQUIH", "aminkader.com", "marque de mode"),
+    ("AUTONOVA", "autonovamtl.com", "concessionnaire à Montréal"),
+    ("THOMAS FISCHER", "galeriethomasfischer.de", "galerie d'art allemande"),
+])
+def test_rejects_measured_false_positives(nom, domaine, quoi):
+    """Non-régression : faux positifs réels mesurés sur 15 garages parisiens.
+
+    Tous passaient avec l'ancien match par sous-chaîne (`bayard` ⊂ `groupebayard`).
+    Le pire d'entre eux livrait `dpo@groupebayard.com` — le délégué à la
+    protection des données d'un éditeur, soit le pire destinataire possible
+    pour de la prospection à froid.
+    """
+    assert not ea._name_matches_domain(nom, domaine, GARAGES), f"{domaine} = {quoi}"
+
+
+def test_substring_alone_is_never_enough():
+    """Un token inclus dans la racine sans en être un mot entier → rejet."""
+    assert not ea._name_matches_domain("MARTIN", "martinelli-immobilier.fr", GARAGES)
+    assert not ea._name_matches_domain("NOVA", "novatech-solutions.com", GARAGES)
 
 
 def test_name_match_depends_on_the_campaign_icp():
