@@ -18,6 +18,7 @@ from agents.enrichissement_agent import (
     _extract_from_text,
     enrichissement_node,
 )
+from models.criteres import CriteresCiblage
 from models.prospect import Prospect
 
 CID = uuid.uuid4()
@@ -28,7 +29,7 @@ def _p(**over) -> Prospect:
 
 
 def _fixed_resolver(contacts: Contacts, log: list | None = None, name: str = ""):
-    async def _resolver(prospect, client, settings, site_web):
+    async def _resolver(prospect, client, settings, site_web, generic):
         if log is not None:
             log.append(name)
         return contacts
@@ -122,14 +123,65 @@ async def test_node_empty_prospects_noop():
     assert (await enrichissement_node({"prospects": []}))["prospects"] == []
 
 
+# --- Vocabulaire non discriminant dérivé de l'ICP (règle #3) ----------------
+def _criteres(positifs: list[str], negatifs: list[str] | None = None) -> CriteresCiblage:
+    return CriteresCiblage(
+        nom="ICP de test",
+        mots_cles_positifs=positifs,
+        mots_cles_negatifs=negatifs or [],
+    )
+
+
+# ICP pilote « garages » : son vocabulaire sectoriel n'identifie aucun prospect.
+GARAGES = ea.generic_tokens(_criteres(["garage", "auto", "pare-brise"], ["groupe"]))
+
+
+def test_generic_tokens_come_from_icp_not_code():
+    assert "garage" in GARAGES and "brise" in GARAGES     # mots-clés ICP
+    assert "sarl" in GARAGES                              # boilerplate juridique
+    # Rien de sectoriel n'est présent sans l'ICP correspondant.
+    assert "garage" not in ea.generic_tokens(None)
+    # Un autre ICP → un autre vocabulaire générique.
+    boulangeries = ea.generic_tokens(_criteres(["boulangerie", "patisserie"]))
+    assert "boulangerie" in boulangeries and "garage" not in boulangeries
+
+
 # --- Filtre de précision (page = bonne entreprise) --------------------------
 def test_name_matches_domain():
-    assert ea._name_matches_domain("Garagex Pro", "garagex.fr")
-    assert ea._name_matches_domain("BAYARD AUTOMOBILE", "groupe-bayard.com")
-    assert not ea._name_matches_domain("INTEGRAL PARE BRISE", "carygroup.com")
-    assert not ea._name_matches_domain("XAVIER SUZZONI", "essec.edu")
-    # nom trop générique → non confirmable → False (on préfère ne rien retenir)
-    assert not ea._name_matches_domain("Garage Auto", "unsite.fr")
+    assert ea._name_matches_domain("Garagex Pro", "garagex.fr", GARAGES)
+    assert ea._name_matches_domain("BAYARD AUTOMOBILE", "groupe-bayard.com", GARAGES)
+    assert not ea._name_matches_domain("INTEGRAL PARE BRISE", "carygroup.com", GARAGES)
+    assert not ea._name_matches_domain("XAVIER SUZZONI", "essec.edu", GARAGES)
+    # nom 100 % sectoriel → non confirmable → False (on préfère ne rien retenir)
+    assert not ea._name_matches_domain("Garage Auto", "garage-auto-durand.fr", GARAGES)
+
+
+def test_name_match_depends_on_the_campaign_icp():
+    """Le même nom est discriminant ou non selon l'ICP de la campagne."""
+    nom, domaine = "Garage Durand", "garage-martin.fr"
+    # Campagne garages : « garage » ne discrimine pas → seul « durand » compte
+    # → le domaine du garage Martin est bien rejeté.
+    assert not ea._name_matches_domain(nom, domaine, GARAGES)
+    # Campagne boulangeries : « garage » redevient un token identifiant → match.
+    assert ea._name_matches_domain(nom, domaine, ea.generic_tokens(_criteres(["boulangerie"])))
+
+
+@pytest.mark.asyncio
+async def test_node_derives_generic_tokens_from_state_criteres(monkeypatch):
+    """Le node passe bien le vocabulaire de l'ICP aux résolveurs."""
+    seen: list[frozenset[str]] = []
+
+    async def _resolver(prospect, client, settings, site_web, generic):
+        seen.append(generic)
+        return Contacts(source="spy")
+
+    monkeypatch.setattr(ea, "RESOLVERS", [_resolver])
+    await enrichissement_node({
+        "prospects": [_p()],
+        "criteres": _criteres(["garage", "atelier"]),
+    })
+    assert "garage" in seen[0] and "atelier" in seen[0]
+    assert "paris" in seen[0]  # la ville du prospect n'identifie personne non plus
 
 
 # --- Résolveur Tavily (HTTP mocké) -----------------------------------------
@@ -143,7 +195,7 @@ async def test_tavily_resolver_extracts_when_domain_matches_name():
     prospect = Prospect(campagne_id=CID, nom_entreprise="Garagex Pro", ville="Paris")
     settings = ea.Settings(tavily_api_key="test-key")
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        contacts = await ea._resolve_tavily(prospect, client, settings, None)
+        contacts = await ea._resolve_tavily(prospect, client, settings, None, GARAGES)
     assert contacts.emails == ["pro@garagex.fr"]           # essec.edu écarté
     assert contacts.site_web == "http://garagex.fr"
     assert contacts.phones                                 # tél de la page confirmée

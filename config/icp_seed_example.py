@@ -44,7 +44,15 @@ ICP_SEEDS: dict[str, dict] = {
         "anciennete_min_ans": 3,
         "exiger_site_web": False,
         "exiger_email": True,
-        "mots_cles_positifs": ["réparation", "multi-marques", "atelier"],
+        # Vocabulaire sectoriel de la cible. Sert deux usages : signaux positifs
+        # du scoring règles (#24) ET mots non discriminants pour le filtre
+        # nom↔domaine de l'enrichissement (#18) — dans une campagne garages,
+        # « garage » ne distingue aucun prospect d'un autre.
+        "mots_cles_positifs": [
+            "réparation", "multi-marques", "atelier", "garage", "auto",
+            "automobile", "carrosserie", "mécanique", "pièces", "pneus",
+            "pare-brise", "service",
+        ],
         "mots_cles_negatifs": ["concession", "groupe", "centrale"],
     },
 }

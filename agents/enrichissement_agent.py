@@ -17,6 +17,11 @@ domaine** : on ne retient un email que si son domaine == celui de la page source
 (l'email propre de l'entreprise), et on ne fait confiance aux téléphones d'une
 page que si elle a aussi livré un email au bon domaine.
 
+Ce filtre compare le nom de l'entreprise au domaine, en ignorant les mots qui
+n'identifient personne dans la campagne. Ce vocabulaire non discriminant est
+**dérivé de l'ICP client** (`generic_tokens()`), jamais codé en dur : ce qui est
+générique pour des garages ne l'est pas pour des boulangeries (règle #3).
+
 Architecture pluggable : `RESOLVERS` est une liste ordonnée ; on peut retirer
 Crawl4AI (dépendance lourde) plus tard sans refactor.
 """
@@ -35,6 +40,7 @@ from bs4 import BeautifulSoup
 
 from config.settings import Settings, get_settings
 from graph.state import EtatAgent
+from models.criteres import CriteresCiblage
 from models.prospect import Prospect, _clean_email, _normalize_phone
 
 logger = logging.getLogger(__name__)
@@ -76,27 +82,52 @@ def _email_domain(email: str) -> str:
     return _domain(email.rsplit("@", 1)[-1])
 
 
-# Mots trop génériques pour identifier une entreprise (secteur/forme juridique).
-_GENERIC_TOKENS = frozenset({
-    "garage", "auto", "autos", "automobile", "automobiles", "carrosserie",
-    "mecanique", "reparation", "pieces", "pneus", "pare", "brise", "service",
-    "services", "sarl", "sas", "sasu", "eurl", "sa", "ets", "etablissements",
-    "groupe", "compagnie", "cie", "france", "paris", "societe",
+# Boilerplate de raison sociale : formes juridiques et mentions nationales.
+# Sans rapport avec un secteur — valable pour TOUT ICP, donc légitime en dur.
+# Le vocabulaire non discriminant propre au secteur ciblé, lui, vient de l'ICP
+# client (règle #3) — voir `generic_tokens()`.
+# NB : les tokens < 4 lettres (sas, sa, cie, ets) sont déjà écartés par le
+# seuil de longueur de `_name_tokens`.
+_LEGAL_FORM_TOKENS = frozenset({
+    "sarl", "sasu", "eurl", "etablissements", "societe", "compagnie",
+    "entreprise", "entreprises", "france",
 })
 
 
-def _name_tokens(nom: str) -> list[str]:
+def _words(text: str) -> list[str]:
+    """Mots ASCII minuscules d'un texte (accents retirés)."""
+    n = unicodedata.normalize("NFKD", (text or "").lower()).encode("ascii", "ignore").decode()
+    return [t for t in re.split(r"[^a-z0-9]+", n) if t]
+
+
+def generic_tokens(criteres: CriteresCiblage | None) -> frozenset[str]:
+    """Mots qui n'identifient AUCUNE entreprise dans cette campagne.
+
+    Dans une campagne « garages », tout le monde s'appelle « Garage X » : le mot
+    « garage » ne discrimine personne. Pour une campagne « boulangeries », ce
+    serait « boulangerie ». Ce vocabulaire sectoriel est donc **dérivé de l'ICP
+    client** (`mots_cles_positifs` / `mots_cles_negatifs`, posés dans l'état par
+    `init_campagne` #16) et jamais codé en dur (règle #3). Seul le boilerplate
+    juridique, réellement universel, reste dans le code.
+    """
+    tokens = set(_LEGAL_FORM_TOKENS)
+    if criteres is not None:
+        for mot_cle in (*criteres.mots_cles_positifs, *criteres.mots_cles_negatifs):
+            tokens.update(_words(mot_cle))
+    return frozenset(tokens)
+
+
+def _name_tokens(nom: str, generic: frozenset[str]) -> list[str]:
     """Tokens significatifs du nom (sans accents, ≥4 lettres, hors génériques)."""
-    n = unicodedata.normalize("NFKD", nom.lower()).encode("ascii", "ignore").decode()
-    return [t for t in re.split(r"[^a-z0-9]+", n) if len(t) >= 4 and t not in _GENERIC_TOKENS]
+    return [t for t in _words(nom) if len(t) >= 4 and t not in generic]
 
 
-def _name_matches_domain(nom: str, domain: str) -> bool:
+def _name_matches_domain(nom: str, domain: str, generic: frozenset[str]) -> bool:
     """Le domaine appartient-il vraisemblablement à l'entreprise ? True si sa
     racine contient un token significatif du nom. False si le nom est trop
     générique (on ne peut pas confirmer → on préfère ne rien retenir)."""
     root = domain.rsplit(".", 1)[0].replace("-", "")
-    tokens = _name_tokens(nom)
+    tokens = _name_tokens(nom, generic)
     return any(t in root or root in t for t in tokens) if tokens else False
 
 
@@ -130,7 +161,8 @@ def _extract_from_html(html: str, source_domain: str | None = None) -> tuple[lis
 
 # --- Résolveurs (ordre = cascade) ------------------------------------------
 async def _resolve_tavily(
-    prospect: Prospect, client: httpx.AsyncClient, settings: Settings, site_web: str | None
+    prospect: Prospect, client: httpx.AsyncClient, settings: Settings,
+    site_web: str | None, generic: frozenset[str],
 ) -> Contacts | None:
     """Recherche Tavily sur nom+ville ; extrait par résultat en filtrant sur le
     domaine de la page (email propre de l'entreprise). Propose un site candidat."""
@@ -154,7 +186,7 @@ async def _resolve_tavily(
         domain = _domain(url)
         # On n'extrait que des pages dont le domaine matche le nom de l'entreprise
         # (sinon on récupère les contacts d'une AUTRE société).
-        if not _name_matches_domain(prospect.nom_entreprise, domain):
+        if not _name_matches_domain(prospect.nom_entreprise, domain, generic):
             continue
         content = f"{result.get('raw_content') or ''} {result.get('content') or ''}"
         e, p = _extract_from_text(content, source_domain=domain)
@@ -166,7 +198,8 @@ async def _resolve_tavily(
 
 
 async def _resolve_crawl4ai(
-    prospect: Prospect, client: httpx.AsyncClient, settings: Settings, site_web: str | None
+    prospect: Prospect, client: httpx.AsyncClient, settings: Settings,
+    site_web: str | None, generic: frozenset[str],
 ) -> Contacts | None:
     """Crawl du site (rendu JS) via Crawl4AI. Dégrade proprement si non installé
     (`crawl4ai-setup` non fait) — la cascade continue sans lui."""
@@ -189,7 +222,8 @@ async def _resolve_crawl4ai(
 
 
 async def _resolve_ddg(
-    prospect: Prospect, client: httpx.AsyncClient, settings: Settings, site_web: str | None
+    prospect: Prospect, client: httpx.AsyncClient, settings: Settings,
+    site_web: str | None, generic: frozenset[str],
 ) -> Contacts | None:
     """Dernier recours : recherche DuckDuckGo (sans clé, rate-limité) puis fetch
     httpx des résultats, en filtrant les emails sur le domaine de chaque page."""
@@ -211,7 +245,7 @@ async def _resolve_ddg(
     site = site_web
     for url in [u for u in urls if u][:2]:
         domain = _domain(url)
-        if not _name_matches_domain(prospect.nom_entreprise, domain):
+        if not _name_matches_domain(prospect.nom_entreprise, domain, generic):
             continue
         site = site or url
         try:
@@ -230,16 +264,20 @@ RESOLVERS = [_resolve_tavily, _resolve_crawl4ai, _resolve_ddg]
 
 # --- Enrichissement d'un prospect ------------------------------------------
 async def _enrich_prospect(
-    prospect: Prospect, client: httpx.AsyncClient, settings: Settings
+    prospect: Prospect, client: httpx.AsyncClient, settings: Settings,
+    generic: frozenset[str] = frozenset(),
 ) -> None:
     all_emails: list[str] = []
     all_phones: list[str] = []
     sources: list[str] = []
     site = prospect.site_web
+    # La ville n'identifie pas l'entreprise non plus (« Garage de Paris » à
+    # Paris) : on l'ajoute aux tokens non discriminants, prospect par prospect.
+    generic = generic | frozenset(_words(prospect.ville or ""))
 
     for resolver in RESOLVERS:
         try:
-            contacts = await resolver(prospect, client, settings, site)
+            contacts = await resolver(prospect, client, settings, site, generic)
         except Exception as exc:  # un résolveur KO ne casse pas le prospect
             logger.warning("%s KO (%s) : %s", resolver.__name__, prospect.siret, exc)
             continue
@@ -295,11 +333,13 @@ async def enrichissement_node(state: EtatAgent, batch_size: int = BATCH_SIZE) ->
         return state
     settings = get_settings()
     semaphore = asyncio.Semaphore(batch_size)
+    # Vocabulaire non discriminant de CETTE campagne, dérivé de l'ICP client.
+    generic = generic_tokens(state.get("criteres"))
 
     async with httpx.AsyncClient(timeout=20.0) as client:
         async def _one(prospect: Prospect) -> None:
             async with semaphore:
-                await _enrich_prospect(prospect, client, settings)
+                await _enrich_prospect(prospect, client, settings, generic)
 
         await asyncio.gather(*(_one(p) for p in prospects))
 
