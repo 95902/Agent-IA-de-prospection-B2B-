@@ -1,24 +1,26 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { Menu, Bot } from "lucide-react";
+import { Menu, Bot, RotateCcwClock, BellDot } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/components/ui/Sheet";
 import { Navigation } from "@/components/ui/Navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
+import { Input } from "@/components/ui/Input";
 
 const RootLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6">
-        <div className="flex items-center gap-3">
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4">
+        <div className="flex items-center">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -36,23 +38,47 @@ const RootLayout = () => {
               <Navigation />
             </SheetContent>
           </Sheet>
-          <div className="flex items-center gap-2 font-bold text-lg">
+          <div className="flex items-center gap-2 w-60 font-bold text-lg">
             <Bot className="h-6 w-6 text-primary" />
-            <span>Agent IA B2B</span>
+            <span className="text-nowrap">B2B Intelligence</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Agent Actif
-          </span>
+        <div className="flex-1 px-4">
+          <Input placeholder="Rechercher..." />
+        </div>
+        <div className="flex items-center">
+          <div className="flex gap-4 px-4 items-center">
+            <Button variant="ghost" size="icon">
+              <BellDot className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+            <Button variant="ghost" size="icon">
+              <RotateCcwClock className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="h-full flex items-center gap-4 border-l px-4">
+            <div className="flex flex-col ">
+              <span className="font-semibold text-nowrap">Taupin Fabien</span>
+              <p className="text-sm text-muted-foreground text-nowrap">
+                Directeur du monde
+              </p>
+            </div>
+            <Avatar size="lg">
+              <AvatarImage
+                src="https://github.com/shadcn.png"
+                alt="@shadcn"
+                className="grayscale"
+              />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+          </div>
         </div>
       </header>
-      <div className="flex flex-1">
+      <div className="flex h-screen flex-1 overflow-hidden">
         <aside className="hidden w-64 border-r bg-card/50 p-4 md:block ">
           <Navigation />
         </aside>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1  md:p-8 bg-blue-50/50 p-6 overflow-y-scroll">
           <Outlet />
         </main>
       </div>

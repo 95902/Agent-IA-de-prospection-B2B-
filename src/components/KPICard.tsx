@@ -42,7 +42,7 @@ export const KPICard = ({
             <span> {`${isPositive ? "+" : "-"}${change}%`}</span>
           </div>
         </div>
-        <div className="">
+        <div>
           <p className="text-md text-[#45464D] tracking-wider leading-6  uppercase inter">
             {title}
           </p>
