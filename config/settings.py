@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     claude_scoring_model: str = "claude-sonnet-5"
 
+    # ---------- APIs collecte ----------
+    insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
+
     @property
     def postgres_dsn(self) -> str:
         return (
