@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # ---------- APIs collecte ----------
     insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
+    tavily_api_key: str = ""  # enrichissement (#18) — auth Bearer, quota 1000/mois
 
     @property
     def postgres_dsn(self) -> str:

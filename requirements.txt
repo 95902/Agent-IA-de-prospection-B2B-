@@ -14,6 +14,11 @@ phonenumbers>=8.13            # normalisation téléphone -> E.164
 email-validator>=2.1          # validation email RFC (utilisé par le validator, pas EmailStr)
 python-stdnum>=1.19           # SIRET/SIREN : checksum Luhn + exception La Poste
 
+# Enrichissement (issue #18) — cascade Tavily (via httpx) + Crawl4AI + DuckDuckGo
+beautifulsoup4>=4.12          # extraction mailto/emails du HTML
+ddgs>=6.0                     # DuckDuckGo (fallback recherche, sans clé)
+crawl4ai>=0.4                 # crawl JS (Playwright) — nécessite `crawl4ai-setup`
+
 # --- Dev (tests) ---
 pytest>=8.0,<9.0
 pytest-asyncio>=0.23,<0.25
