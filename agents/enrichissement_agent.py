@@ -117,9 +117,25 @@ def generic_tokens(criteres: CriteresCiblage | None) -> frozenset[str]:
     return frozenset(tokens)
 
 
+_MIN_TOKEN = 4  # en deçà, un token n'identifie rien (sigles : APF, AK, LS…)
+
+# Un prospect vient de Sirene : il est français. Un ccTLD étranger désigne donc
+# une autre entité — mesuré : `powerup.at` (Autriche) pour une agence parisienne
+# nommée POWER UP, `galeriethomasfischer.de` pour un garage du 8e. Les TLD
+# génériques restent acceptés (une société française peut être en .com/.io).
+_TLD_GENERIQUES = frozenset({
+    "fr", "com", "net", "org", "eu", "io", "ai", "co", "info", "biz", "app", "dev",
+})
+
+
+def _tld_etranger(domain: str) -> bool:
+    tld = domain.rsplit(".", 1)[-1].lower()
+    return len(tld) == 2 and tld not in _TLD_GENERIQUES
+
+
 def _name_tokens(nom: str, generic: frozenset[str]) -> list[str]:
     """Tokens significatifs du nom (sans accents, ≥4 lettres, hors génériques)."""
-    return [t for t in _words(nom) if len(t) >= 4 and t not in generic]
+    return [t for t in _words(nom) if len(t) >= _MIN_TOKEN and t not in generic]
 
 
 def _name_matches_domain(nom: str, domain: str, generic: frozenset[str]) -> bool:
@@ -144,14 +160,19 @@ def _name_matches_domain(nom: str, domain: str, generic: frozenset[str]) -> bool
     Un nom entièrement générique n'est pas confirmable → False (on préfère ne
     rien retenir : un mauvais email est pire que pas d'email).
     """
+    if _tld_etranger(domain):
+        return False
     root = domain.rsplit(".", 1)[0]
     segments = [s for s in re.split(r"[^a-z0-9]+", root) if s]
     if not segments:
         return False
     tokens = _name_tokens(nom, generic)
     # Variantes concaténées du nom : sans les mots génériques, puis avec (un
-    # domaine légitime peut les inclure — `garagedurand.fr`).
-    joints = {"".join(tokens), "".join(_words(nom))} - {""}
+    # domaine légitime peut les inclure — `garagedurand.fr`). Le seuil de
+    # longueur s'applique aussi ici : sans lui, un sigle de 3 lettres passerait
+    # alors qu'il n'a aucun token identifiant (mesuré : « APF » ↔
+    # `apf-francehandicap.org`, une association caritative).
+    joints = {j for j in ("".join(tokens), "".join(_words(nom))) if len(j) >= _MIN_TOKEN}
     candidats = set(segments) | {"".join(segments)}
     return any(t in candidats for t in tokens) or bool(joints & candidats)
 

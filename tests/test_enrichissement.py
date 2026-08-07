@@ -176,6 +176,25 @@ def test_rejects_measured_false_positives(nom, domaine, quoi):
     assert not ea._name_matches_domain(nom, domaine, GARAGES), f"{domaine} = {quoi}"
 
 
+def test_sigle_trop_court_ne_matche_pas():
+    """Mesuré sur l'ICP agences : « APF » (3 lettres, aucun token identifiant)
+    matchait `apf-francehandicap.org` — une association caritative — via la
+    variante concaténée du nom, qui contournait le seuil de longueur."""
+    agences = ea.generic_tokens(_criteres(["agence", "communication"]))
+    assert not ea._name_matches_domain("APF", "apf-francehandicap.org", agences)
+    assert not ea._name_matches_domain("AK", "akillis.com", agences)
+
+
+def test_tld_etranger_rejete():
+    """Un prospect Sirene est français : un ccTLD étranger = autre entité."""
+    agences = ea.generic_tokens(_criteres(["agence", "communication"]))
+    assert not ea._name_matches_domain("POWER UP", "powerup.at", agences)
+    assert not ea._name_matches_domain("THOMAS FISCHER", "thomasfischer.de", GARAGES)
+    # les TLD génériques restent acceptés
+    assert ea._name_matches_domain("THEMIO", "themio.ai", GARAGES)
+    assert ea._name_matches_domain("GARAGE DURAND", "garagedurand.fr", GARAGES)
+
+
 def test_substring_alone_is_never_enough():
     """Un token inclus dans la racine sans en être un mot entier → rejet."""
     assert not ea._name_matches_domain("MARTIN", "martinelli-immobilier.fr", GARAGES)
