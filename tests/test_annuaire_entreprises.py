@@ -126,6 +126,26 @@ async def test_un_siren_une_seule_requete(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_deux_etablissements_meme_siren_ont_tous_leur_raw_data(monkeypatch):
+    """Deux établissements d'une même entreprise partagent le SIREN.
+
+    Constaté en réel (A.C.S AUTOCLEAN SERVICE, 2 établissements) : le second ne
+    recevait que `nom_dirigeant`, sans les prénom/nom séparés dans `raw_data` —
+    donc inexploitable par Dropcontact, qui les attend distincts.
+    """
+    monkeypatch.setattr(ann, "MIN_INTERVAL_S", 0)
+    appels: list[str] = []
+    etab1, etab2 = _prospect(), _prospect()   # même SIREN
+    async with _client(_fiche(dirigeants=[PERSONNE_PHYSIQUE]), appels) as client:
+        await ann.enrichir_dirigeants([etab1, etab2], client)
+    assert len(appels) == 1                    # toujours une seule requête
+    for etab in (etab1, etab2):
+        assert etab.nom_dirigeant == "STÉPHANE LUZINDALALU"
+        d = ann.dirigeant_de(etab)
+        assert d is not None and (d.prenom, d.nom) == ("STÉPHANE", "LUZINDALALU")
+
+
+@pytest.mark.asyncio
 async def test_prospect_sans_siren_ignore(monkeypatch):
     monkeypatch.setattr(ann, "MIN_INTERVAL_S", 0)
     appels: list[str] = []

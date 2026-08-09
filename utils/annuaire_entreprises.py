@@ -128,6 +128,11 @@ async def enrichir_dirigeants(
     """
     prospects = list(prospects)
     cache: dict[str, Dirigeant | None] = {}
+    # Charge utile mémoïsée par SIREN : deux établissements d'une même entreprise
+    # partagent le SIREN, et tous deux doivent recevoir `raw_data['annuaire']`
+    # (sinon le second se retrouve avec `nom_dirigeant` mais sans prénom/nom
+    # séparés — constaté en réel sur deux établissements A.C.S AUTOCLEAN SERVICE).
+    charges: dict[str, dict] = {}
 
     ferme_client = client is None
     client = client or httpx.AsyncClient()
@@ -144,20 +149,22 @@ async def enrichir_dirigeants(
                 resultat = await chercher_par_siren(siren, client)
                 if resultat is None:
                     continue
-                cache[siren] = extraire_dirigeant(resultat)
+                dirigeant = extraire_dirigeant(resultat)
+                cache[siren] = dirigeant
+                charges[siren] = {
+                    # Minimisation RGPD : ni date ni année de naissance.
+                    "dirigeant": (
+                        {"prenom": dirigeant.prenom, "nom": dirigeant.nom,
+                         "qualite": dirigeant.qualite}
+                        if dirigeant else None
+                    ),
+                    "nom_commercial": _nom_commercial(resultat),
+                    "finances": resultat.get("finances"),
+                    "at": datetime.now(timezone.utc).isoformat(),
+                }
+            if siren in charges:
                 prospect.raw_data = {
-                    **(prospect.raw_data or {}),
-                    "annuaire": {
-                        # Minimisation RGPD : ni date ni année de naissance.
-                        "dirigeant": (
-                            {"prenom": cache[siren].prenom, "nom": cache[siren].nom,
-                             "qualite": cache[siren].qualite}
-                            if cache[siren] else None
-                        ),
-                        "nom_commercial": _nom_commercial(resultat),
-                        "finances": resultat.get("finances"),
-                        "at": datetime.now(timezone.utc).isoformat(),
-                    },
+                    **(prospect.raw_data or {}), "annuaire": charges[siren],
                 }
             dirigeant = cache.get(siren)
             if dirigeant and not prospect.nom_dirigeant:
