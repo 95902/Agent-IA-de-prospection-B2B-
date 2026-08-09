@@ -1,0 +1,30 @@
+# Dépendances OPTIONNELLES — n'installer que sur le VPS Linux de production.
+#
+# Rien ici n'est nécessaire pour faire tourner le pipeline ni les tests : le code
+# dégrade silencieusement si l'import échoue.
+#
+#   pip install -r requirements-optional.txt
+#
+# ---------------------------------------------------------------------------
+# crawl4ai — rendu JS d'un site, en DERNIER RECOURS
+# ---------------------------------------------------------------------------
+# Mesuré sur 20 domaines vérifiés par la jointure géographique OSM (#69), mêmes
+# chemins comparés avec httpx :
+#   → 1 email trouvé sur 20 que httpx n'avait pas (`hotel@hoteldudragon.com`)
+#   → 19/20 résultats identiques, pour 2× le temps
+# Soit ~5 % des domaines, +2,5 points de bout en bout. Réel, mais marginal.
+# (Un premier test sur 7 domaines suggérait ~14 % : l'échantillon plus large a
+#  divisé le gain par trois — d'où la prudence.)
+#
+# ⚠️ NE S'INSTALLE PAS SOUS WINDOWS depuis un clone propre : `pip install
+# crawl4ai` échoue avec `OSError` (limite MAX_PATH de 260 caractères, atteinte en
+# dépaquetant `litellm/proxy/_experimental/...`). Le contournement `--no-deps` ne
+# marche qu'après un premier essai échoué. Sur Linux le problème n'existe pas —
+# d'où l'installation réservée au VPS.
+#
+# ⚠️ Ne résout PAS les protections anti-bot : bloqué par le challenge JS de
+# Cloudflare lors du test.
+#
+# Coût : ~2 Go avec Chromium, 65 paquets supplémentaires.
+# Après installation : `python -m playwright install chromium`
+crawl4ai>=0.4

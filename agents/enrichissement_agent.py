@@ -22,8 +22,13 @@ n'identifient personne dans la campagne. Ce vocabulaire non discriminant est
 **dérivé de l'ICP client** (`generic_tokens()`), jamais codé en dur : ce qui est
 générique pour des garages ne l'est pas pour des boulangeries (règle #3).
 
-Architecture pluggable : `RESOLVERS` est une liste ordonnée ; on peut retirer
-Crawl4AI (dépendance lourde) plus tard sans refactor.
+Architecture pluggable : `RESOLVERS` est une liste ordonnée.
+
+Crawl4AI est **optionnel et absent de `requirements.txt`** (voir
+`requirements-optional.txt`) : mesuré sur 20 domaines vérifiés, il n'apporte qu'un
+email de plus que httpx, pour 2× le temps — et il ne s'installe pas sous Windows.
+Le résolveur ci-dessous dégrade silencieusement si l'import échoue, donc la cascade
+fonctionne à l'identique avec ou sans lui.
 """
 from __future__ import annotations
 
