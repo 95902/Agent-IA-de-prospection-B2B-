@@ -26,6 +26,7 @@ import { MoveLeft, MoveRight } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 import type { ColumnConfig } from "@/components/DesktopTable";
+import { useNavigate } from "@tanstack/react-router";
 
 export interface CompanyData {
   id: string;
@@ -121,6 +122,7 @@ export const ProspectsTable = () => {
   const startIndex = (currentPage - 1) * rowPerPage;
   const endIndex = startIndex + rowPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
+  const navigate = useNavigate();
 
   const handlePrevious = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -156,6 +158,13 @@ export const ProspectsTable = () => {
     }
   };
 
+  const handleRowClick = (id: string) => {
+    navigate({
+      to: "/prospects/$prospectId",
+      params: { prospectId: id },
+    });
+  };
+
   return (
     <div className="w-full h-full flex flex-col justify-between overflow-hidden border rounded-lg bg-white">
       <div className="flex-1 overflow-y-auto w-full">
@@ -181,12 +190,7 @@ export const ProspectsTable = () => {
                   className={`cursor-pointer transition-colors ${
                     isSelected ? "bg-slate-100/80 hover:bg-slate-100" : ""
                   }`}
-                  onClick={() => {
-                    setSelectedItems((prev) => ({
-                      ...prev,
-                      [item.id]: !prev[item.id],
-                    }));
-                  }}
+                  onClick={() => handleRowClick(item.id)}
                 >
                   <TableCell className="w-[10%] text-center">
                     <div
