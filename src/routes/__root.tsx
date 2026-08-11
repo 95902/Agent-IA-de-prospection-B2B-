@@ -82,7 +82,7 @@ const RootLayout = () => {
           <aside className="hidden w-64 border-r bg-card/50 p-4 md:block ">
             <Navigation />
           </aside>
-          <main className="flex-1  md:p-8 p-6 overflow-y-scroll">
+          <main className="flex-1 p-6 overflow-y-scroll">
             <Outlet />
           </main>
         </div>

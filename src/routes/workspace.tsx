@@ -216,12 +216,12 @@ const Step4 = ({ onPrevious }: StepsProps) => {
       <div className="flex w-full justify-between items-center">
         <Button
           type="button"
-          className="w-64"
+          className="w-fit"
           onClick={(e) => handlePrevious(e)}
         >
           <ArrowLeft /> Retour
         </Button>
-        <Button type="submit" className="w-64">
+        <Button type="submit" className="w-fit">
           Suivant <ArrowRight />
         </Button>
       </div>
@@ -243,7 +243,6 @@ const Step3 = ({ onNext, onPrevious }: StepsProps) => {
   };
 
   return (
-    <Card className="w-full h-full p-8 rounded-none">
       <form
         onSubmit={handleNext}
         className="flex flex-col h-full justify-between gap-6"
@@ -311,17 +310,16 @@ const Step3 = ({ onNext, onPrevious }: StepsProps) => {
         <div className="flex w-full justify-between items-center pt-4">
           <Button
             type="button"
-            className="w-64"
+            className="w-fit"
             onClick={(e) => handlePrevious(e)}
           >
             <ArrowLeft /> Retour
           </Button>
-          <Button type="submit" className="w-64">
+          <Button type="submit" className="w-fit">
             Suivant <ArrowRight />
           </Button>
         </div>
       </form>
-    </Card>
   );
 };
 
@@ -344,14 +342,13 @@ const Step2 = ({ onNext, onPrevious }: StepsProps) => {
   };
 
   return (
-    <Card className="w-full h-full p-8 rounded-none">
       <form
         onSubmit={handleNext}
-        className="flex flex-col items-end h-full flex-wrap justify-between"
+        className="flex flex-col items-end h-full gap-4 lg:flex-wrap justify-between"
       >
         <FieldGroup>
           <FieldSet>
-            <div className="flex justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row justify-between">
               <div className="flex flex-col">
                 <FieldLegend>
                   <p className="text-3xl font-bold">Cible </p>
@@ -360,12 +357,12 @@ const Step2 = ({ onNext, onPrevious }: StepsProps) => {
                   Filtrez vos prospects selon la cible choisie
                 </FieldDescription>
               </div>
-              <Button type="reset" variant="outline" onClick={handleReset}>
+              <Button type="reset" variant="outline" className="w-fit" onClick={handleReset}>
                 Réinitialiser
               </Button>
             </div>
             <FieldGroup>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid lg:grid-cols-2 gap-4">
                 <Field>
                   <FieldLabel>Nom du client</FieldLabel>
                   <Input
@@ -410,8 +407,8 @@ const Step2 = ({ onNext, onPrevious }: StepsProps) => {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Card className="p-6  h-full shrink-0 rounded-lg border-2 flex-1 flex flex-col overflow-hidden">
-                  <p className="text-blue-500 font-bold pb-4">Cible</p>
+                <Card className="p-4 shrink-0 rounded-lg border-2  flex flex-col overflow-hidden">
+                  <p className="text-blue-500 font-bold">Cible</p>
                   <div className="flex flex-col items-center gap-2 w-full">
                     <div className="flex justify-between items-center gap-1 w-full">
                       <p className="text-lg ">Audience estimé</p>
@@ -437,17 +434,16 @@ const Step2 = ({ onNext, onPrevious }: StepsProps) => {
         <div className="flex w-full justify-between items-center">
           <Button
             type="button"
-            className="w-64"
+            className="w-fit"
             onClick={(e) => handlePrevious(e)}
           >
             <ArrowLeft /> Retour
           </Button>
-          <Button type="submit" className="w-64">
+          <Button type="submit" className="w-fit">
             Suivant <ArrowRight />
           </Button>
         </div>
       </form>
-    </Card>
   );
 };
 
@@ -463,83 +459,88 @@ const Step1 = ({ onNext }: StepsProps) => {
   };
 
   return (
-    <Card className="w-full h-full p-8 rounded-none">
-      <form
-        onSubmit={handleNext}
-        className="flex flex-col items-end h-full flex-wrap justify-between"
-      >
-        <FieldGroup>
-          <FieldSet>
-            <div className="flex justify-between">
-              <div className="flex flex-col">
-                <FieldLegend>
-                  <p className="text-3xl font-bold">Information du client</p>
-                </FieldLegend>
-                <FieldDescription>
-                  Filtrez vos prospects selon les différents critères
-                </FieldDescription>
-              </div>
-              <Button type="reset" variant="outline" onClick={handleReset}>
-                Réinitialiser
-              </Button>
+    <form
+      onSubmit={handleNext}
+      className="flex flex-col items-end flex-wrap h-full justify-between"
+    >
+      <FieldGroup>
+        <FieldSet>
+          <div className="flex flex-col h-full lg:flex-row justify-between gap-4">
+            <div className="flex flex-col">
+              <FieldLegend>
+                <p className="text-3xl font-bold text-nowrap">
+                  Information du client
+                </p>
+              </FieldLegend>
+              <FieldDescription>
+                Filtrez vos prospects selon les différents critères
+              </FieldDescription>
             </div>
-            <FieldGroup>
-              <div className="grid grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel>Nom du client</FieldLabel>
-                  <Input
-                    id="input-client-name"
-                    type="text"
-                    placeholder="E. G. Acme Corp"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="select-naf">
-                    Secteur / Industrie
-                  </FieldLabel>
-                  <Select
-                    value={departement}
-                    onValueChange={(val) => setDepartement(val)}
-                  >
-                    <SelectTrigger id="select-industry">
-                      <SelectValue placeholder="Sélectionnez un secteur ou une industrie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {DEPARTEMENTS.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel>nom du contact principal</FieldLabel>
-                  <Input
-                    id="input-principal-client-name"
-                    type="text"
-                    placeholder="Nom complet"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Email</FieldLabel>
-                  <Input
-                    id="input-email"
-                    type="email"
-                    placeholder="Email@compagnie.com"
-                  />
-                </Field>
-              </div>
-            </FieldGroup>
-          </FieldSet>
-        </FieldGroup>
-        <Button type="submit" className="w-64">
-          Suivant <ArrowRight />
-        </Button>
-      </form>
-    </Card>
+            <Button
+              type="reset"
+              variant="outline"
+              className="w-fit"
+              onClick={handleReset}
+            >
+              Réinitialiser
+            </Button>
+          </div>
+          <FieldGroup>
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel>Nom du client</FieldLabel>
+                <Input
+                  id="input-client-name"
+                  type="text"
+                  placeholder="E. G. Acme Corp"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="select-naf">
+                  Secteur / Industrie
+                </FieldLabel>
+                <Select
+                  value={departement}
+                  onValueChange={(val) => setDepartement(val)}
+                >
+                  <SelectTrigger id="select-industry">
+                    <SelectValue placeholder="Sélectionnez un secteur ou une industrie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {DEPARTEMENTS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Contact principal</FieldLabel>
+                <Input
+                  id="input-principal-client-name"
+                  type="text"
+                  placeholder="Nom complet"
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Email</FieldLabel>
+                <Input
+                  id="input-email"
+                  type="email"
+                  placeholder="Email@compagnie.com"
+                />
+              </Field>
+            </div>
+          </FieldGroup>
+        </FieldSet>
+      </FieldGroup>
+      <Button type="submit" className="w-fit">
+        Suivant <ArrowRight />
+      </Button>
+    </form>
   );
 };
 
@@ -563,7 +564,7 @@ const Workspace = () => {
       {step === 3 ? (
         <Step4 onNext={handleSubmit} onPrevious={handlePrevious} />
       ) : (
-        <div className="w-4/5 h-full flex flex-col justify-start gap-8 items-center">
+        <div className="w-full h-full flex flex-col justify-start gap-8 items-center">
           <div className="flex flex-col gap-4 items-center justify-center w-full">
             <h1 className="text-3xl font-bold">
               Configurez votre espace de travail
@@ -573,7 +574,7 @@ const Workspace = () => {
               B2B de ProspectFlow à identifier les prospects à fort potentiel.
             </h2>
           </div>
-          <div className="h-full shrink-0 rounded-lg border-2 min-w-md flex-1 flex flex-col overflow-hidden  w-full">
+          <Card className="rounded-lg border-2 flex-1 flex flex-col overflow-y-scroll w-full h-full p-4 ">
             {step === 0 && <Step1 onNext={handleNext} />}
             {step === 1 && (
               <Step2 onNext={handleNext} onPrevious={handlePrevious} />
@@ -584,7 +585,7 @@ const Workspace = () => {
             {step === 3 && (
               <Step4 onNext={handleSubmit} onPrevious={handlePrevious} />
             )}
-          </div>
+          </Card>
         </div>
       )}
     </div>

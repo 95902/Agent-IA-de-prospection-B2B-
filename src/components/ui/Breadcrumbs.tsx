@@ -6,13 +6,13 @@ interface BreadcrumbsProps {
 }
 export const Breadcrumbs = ({ data, step }: BreadcrumbsProps) => {
   return (
-    <div className="flex gap-2 w-full items-center ">
+    <div className="flex gap-2 w-full items-center overflow-hidden">
       {data.map((crumb, index) => {
         const isLast = index === data.length - 1;
         return (
-          <React.Fragment key={index}>
+          <React.Fragment key={index} >
             <div
-              className={`min-w-8 min-h-8 transition-colors duration-500 rounded-full ${step >= index ? "bg-blue-500" : "bg-gray-500"}  shrink-0 items-center justify-center font-semibold flex text-white`}
+              className={`min-w-8 min-h-8transition-colors duration-500 rounded-full ${step >= index ? "bg-blue-500" : "bg-gray-500"}  shrink-0 items-center justify-center font-semibold flex text-white`}
             >
               {index}
             </div>

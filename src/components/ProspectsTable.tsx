@@ -167,7 +167,7 @@ export const ProspectsTable = () => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col justify-between overflow-hidden border rounded-lg ">
+    <Card className="w-full lg:h-full flex flex-col justify-between overflow-hidden border rounded-lg ">
       <div className="flex-1 overflow-y-auto w-full">
         <Table className="w-full">
           <TableHeader className="sticky top-0  z-10 shadow-sm">

@@ -65,8 +65,8 @@ const CallCard = () => {
 
 const Calls = () => {
   return (
-    <div className="w-full h-full flex gap-4">
-      <Card className="w-1/3 border rounded-lg h-full flex flex-col ">
+    <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
+      <Card className="w-full lg:w-1/3 border rounded-lg h-full flex flex-col ">
         <div className="w-full rounded-t flex justify-between items-center bg-[#C6C6CD]/20 border-b-2 p-4">
           <p className="text-xl">FILE D'ATTENTE</p>
           <div className="bg-blue-100 rounded-lg px-2 p-1 border border-blue-300 text-blue-700">
@@ -83,7 +83,7 @@ const Calls = () => {
           <CallCard />
         </div>
       </Card>
-      <div className="w-1/3 border-2 overflow-hidden rounded-lg bg-transparent h-full flex flex-col p-6">
+      <div className="w-full lg:w-1/3 border-2 overflow-hidden rounded-lg bg-transparent h-full flex flex-col p-6">
         <div className="flex flex-col gap-6">
           <div className="flex w-full justify-between items-center">
             <div className="h-full bg-gray-100 border-2 border-gray-300 rounded-lg w-fit object-cover">
@@ -158,7 +158,7 @@ const Calls = () => {
           </div>
         </div>
       </div>
-      <div className="w-1/3 flex flex-col gap-4 h-full overflow-hidden rounded-lg">
+      <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full overflow-hidden rounded-lg">
         <Card className="w-full shrink-0 border gap-2 border-gray-400 items-center rounded-lg flex flex-col p-4">
           <div className="px-2 py-1 rounded-xl w-fit bg-blue-600 border border-blue-800">
             <p className="text-sm text-white">20:38</p>
@@ -166,11 +166,11 @@ const Calls = () => {
           <p className="font-bold">+33 1 70 23 4X XX</p>
           <p>Connecting via VoIP-01</p>
           <div className="flex w-full gap-4 items-center">
-            <Button className="w-1/2 rounded-lg flex-col border border-gray-500 flex items-center justify-center h-20 bg-white">
+            <Button className="flex-1 rounded-lg flex-col border border-gray-500 flex items-center justify-center h-20 bg-white">
               <MicOff className="text-blue-700" size={20} />
               <p className="text-blue-700 text-sm">Mute</p>
             </Button>
-            <Button className="w-1/2 rounded-lg flex-col border border-gray-500 flex items-center justify-center h-20 bg-white">
+            <Button className="flex-1 rounded-lg flex-col border border-gray-500 flex items-center justify-center h-20 bg-white">
               <Pause className="text-blue-700" size={20} />
               <p className="text-blue-700 text-sm">Hold</p>
             </Button>
@@ -180,17 +180,17 @@ const Calls = () => {
             <p className="text-green-700">RDV (Ensemble de réunion)</p>
           </div>
           <div className="flex w-full gap-4 items-center">
-            <Button className="w-1/2 rounded-lg gap-2 border border-red-500 flex items-center justify-center h-20 bg-red-100">
+            <Button className="flex-1 rounded-lg gap-2 border border-red-500 flex items-center justify-center h-20 bg-red-100">
               <CircleX className="text-red-700" size={20} />
               <p className="text-red-700 text-sm">Refus</p>
             </Button>
-            <Button className="w-1/2 rounded-lg gap-2 border border-gray-500 flex items-center justify-center h-20 bg-gray-100">
+            <Button className="flex-1 rounded-lg gap-2 border border-gray-500 flex items-center justify-center h-20 bg-gray-100">
               <UserX className="text-blue-700" size={20} />
               <p className="text-blue-700 text-sm">Absent</p>
             </Button>
           </div>
           <Button className="w-full rounded-lg border-gray-500 bg-gray-200 flex items-center justify-center">
-            <p className="text-black">dffd</p>
+            <p className="text-black">Autre résultat</p>
           </Button>
         </Card>
         <Card className="w-full flex-1 border rounded-lg flex flex-col">

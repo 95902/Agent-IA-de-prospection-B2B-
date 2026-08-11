@@ -37,16 +37,16 @@ function Campaigns() {
   const [objective, setObjective] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
   return (
-    <div className="w-full h-full flex gap-4 ">
+    <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-y-scroll">
       <div className="flex flex-col gap-6 flex-1">
         <h1 className="text-2xl font-bold">Création de campagne</h1>
-        <h2 className="text-sm text-muted-foreground pb-4">
+        <h2 className="text-sm text-muted-foreground">
           Configurez vos paramètres de ciblage et de prospection pour commencer
           à trouver des prospects qualifiés.
         </h2>
         <Breadcrumbs data={BREADCRUMBS} step={0} />
         <div className="w-full gap-4 flex flex-1">
-          <Card className="w-full min-w-md h-fit overflow-hidden border rounded-lg p-4 shrink-0">
+          <Card className="min-w-full h-fit overflow-hidden border rounded-lg p-4 shrink-0">
             <form className="flex flex-col gap-6 justify-between items-end ">
               <FieldGroup>
                 <FieldSet>
@@ -122,16 +122,16 @@ function Campaigns() {
           </Card>
         </div>
       </div>
-      <div className="flex flex-col gap-4 h-full min-w-md">
-        <Card className="max-w-md w-full border overflow-hidden rounded-xl shrink-0">
-          <div className="flex flex-col gap-4 border-b rounded-t-lg p-8 bg-[#C6C6CD]/20">
+      <div className="flex flex-col gap-4 md:max-w-full lg:max-w-md">
+        <Card className="w-full border overflow-hidden rounded-xl">
+          <div className="flex flex-col gap-4 border-b rounded-t-lg px-8 py-6 bg-[#C6C6CD]/20">
             <p>Estimations en direct</p>
             <p>
               <span className="font-bold text-5xl  text-blue-700">2482 </span>
               Prospects
             </p>
           </div>
-          <div className="flex flex-col gap-6 px-8 py-4 w-full">
+          <div className="flex flex-col gap-6 px-8  w-full">
             <div className="flex flex-col items-center gap-2 w-full">
               <div className="flex justify-between items-center gap-1 w-full">
                 <p className="text-xs font-bold">Précision du profil</p>
@@ -160,19 +160,21 @@ function Campaigns() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2 items-center p-8 ">
+          <div className="flex gap-2 items-center p-8 pt-0 ">
             <CircleAlert />
             <p className="text-sm text-muted-foreground">
               Données mises à jour il y a 2 minutes
             </p>
           </div>
         </Card>
-        <Card className="flex-1 flex flex-col max-w-md border-2 gap-6 overflow-hidden rounded-lg p-8 shrink-0 bg-[#C6C6CD]/20">
+        <Card className="flex-1 flex flex-col w-full border-2 gap-6 overflow-hidden rounded-lg p-8 shrink-0 bg-[#C6C6CD]/20">
           <div className="flex items-center gap-2">
             <TrendingUp />
             <p>Estimations en direct</p>
           </div>
-          <img src={image} alt="Description" />
+          <div className="w-full h-auto">
+            <img src={image} alt="Description" className="object-cover" />
+          </div>
           <p className="text-sm text-muted-foreground text-wrap">
             Les entreprises SaaS de votre région sélectionnée constatent
             actuellement une augmentation de 15 % des embauches pour les postes
