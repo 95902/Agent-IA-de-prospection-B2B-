@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/Select";
 import { ProspectsTable } from "@/components/ProspectsTable";
 import { useState } from "react";
+import { Card } from "@/components/ui/Card";
 
 const NAFCodes = [
   { label: "NAF", value: "" },
@@ -54,7 +55,7 @@ const Propspect = () => {
 
   return (
     <div className="w-full h-full flex gap-4">
-      <div className="w-full max-w-md overflow-hidden border rounded-lg p-4 bg-white shrink-0">
+      <Card className="w-full max-w-md overflow-hidden border rounded-lg p-4 shrink-0">
         <form>
           <FieldGroup>
             <FieldSet>
@@ -140,7 +141,7 @@ const Propspect = () => {
             Appliquer les filtres
           </Button>
         </form>
-      </div>
+      </Card>
       <ProspectsTable />
     </div>
   );

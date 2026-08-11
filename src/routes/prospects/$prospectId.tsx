@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Button } from "@/components/ui/Button";
-import { CardTitle } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/ui/Progress";
 import { createFileRoute } from "@tanstack/react-router";
@@ -40,7 +40,7 @@ const PropspectId = () => {
       </div>
       <div className="flex-1 flex h-full gap-4">
         <div className="h-full w-1/3 flex flex-col gap-4">
-          <div className="h-1/2 w-full bg-white borde flex flex-col gap-6 border-gray-400 rounded-lg p-8">
+          <Card className="h-1/2 w-full border flex flex-col gap-6 border-gray-400 rounded-lg p-8">
             <div className="flex gap-2 items-center">
               <User size={70} />
               <div className="flex flex-col">
@@ -80,9 +80,9 @@ const PropspectId = () => {
                 Adopteur précoce
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="h-1/2 w-full bg-black gap-6 flex flex-col rounded-lg p-4">
+          <div className="h-1/2 w-full bg-black gap-6 flex flex-col rounded-lg p-4 dark:border-white dark:border">
             <div className="flex justify-between items-center">
               <p className="text-xl font-bold text-white">
                 Score global des prospects
@@ -116,9 +116,9 @@ const PropspectId = () => {
         </div>
 
         <div className="w-2/3 h-full flex flex-col gap-4 rounded-lg">
-          <div className="bg-white border rounded-lg flex flex-col border-gray-400 h-2/5">
-            <div className="w-full rounded-t-lg flex justify-between items-center bg-gray-200 border-b-2 p-4">
-              <p className="text-gray-700 text-lg">
+          <Card className="border rounded-lg flex flex-col border-gray-400 h-2/5 gap-0">
+            <div className="w-full rounded-t-lg flex justify-between items-center border-b-2 p-4 bg-[#C6C6CD]/20">
+              <p className="text-gray-700 text-lg dark:text-white">
                 Logique de notation de l'IA
               </p>
               <p className="text-blue-500">Afficher les poids détaillés</p>
@@ -158,10 +158,10 @@ const PropspectId = () => {
                 />
               </div>
             </div>
-          </div>
-          <div className="bg-white border flex-col flex rounded-lg border-gray-400 h-3/5">
-            <div className="w-full flex justify-between rounded-t-lg items-center bg-gray-200 p-4">
-              <p className="text-gray-700 text-lg">
+          </Card>
+          <Card className="border flex-col flex rounded-lg border-gray-400 h-3/5 gap-0">
+            <div className="w-full flex justify-between rounded-t-lg items-center p-4 bg-[#C6C6CD]/20">
+              <p className="text-gray-700 text-lg dark:text-white">
                 Historique des interactions
               </p>
               <div className="flex items-center gap-2">
@@ -230,7 +230,7 @@ const PropspectId = () => {
               </div>
             </div>
 
-            <div className="w-full flex justify-between rounded-lg rounded-t-none items-center bg-gray-200 p-4">
+            <div className="w-full flex justify-between rounded-lg rounded-t-none items-center p-4">
               <div className="flex w-full items-center gap-4">
                 <PencilLine />
                 <Input
@@ -243,7 +243,7 @@ const PropspectId = () => {
                 </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

@@ -87,7 +87,7 @@ export const DesktopTable = ({ data }: DataTableProps) => {
   };
 
   return (
-    <div className="w-full overflow-hidden border rounded-lg bg-white">
+    <div className="w-full overflow-hidden border rounded-lg">
       <Table className="w-full">
         <TableHeader>
           <TableRow>
