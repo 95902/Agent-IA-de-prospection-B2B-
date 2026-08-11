@@ -23,7 +23,7 @@ export const KPICard = ({
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 
   return (
-    <Card className="duration-200 h-40 w-57.5 hover:-translate-y-1 rounded-xl border p-6 transition-all hover:shadow-md">
+    <Card className="duration-200 h-40 min-w-56 hover:-translate-y-1 rounded-xl border p-6 transition-all hover:shadow-md">
       <CardContent className="flex flex-col gap-4 p-0">
         <div className="flex justify-between">
           <div
@@ -43,7 +43,7 @@ export const KPICard = ({
           </div>
         </div>
         <div>
-          <p className="text-md text-[#45464D] tracking-wider leading-6  uppercase inter">
+          <p className="text-md text-nowrap text-[#45464D] tracking-wider leading-6  uppercase inter">
             {title}
           </p>
           <p className="text-[#1B1B1D] leading-6">{value}</p>

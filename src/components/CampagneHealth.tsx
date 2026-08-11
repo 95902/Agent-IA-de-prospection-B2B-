@@ -56,12 +56,10 @@ const getBadgeStyle = (status: Campaign["status"]) => {
 const HealthCard = ({ campaign }: { campaign: Campaign }) => {
   return (
     <Card
-      className={`p-4 border cursor-pointer flex flex-col  gap-4 rounded-lg  `}
+      className={`p-4 border cursor-pointer flex flex-col  gap-4 rounded-lg`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col  gap-2">
+      <div className="flex items-center justify-between gap-2">
           <h3 className="text-lg font-semibold">{campaign.title}</h3>
-        </div>
         <Badge variant="outline" className={getBadgeStyle(campaign.status)}>
           {campaign.status}
         </Badge>
@@ -85,7 +83,7 @@ const HealthCard = ({ campaign }: { campaign: Campaign }) => {
 
 export const CampagneHealth = () => {
   return (
-    <Card className="flex flex-col gap-4 p-6 border rounded-lg">
+    <Card className="min-w-56 flex flex-col gap-4 p-6 border rounded-lg">
       <h2 className="text-black font-bold dark:text-white">Campagnes</h2>
       {campaignsSeed.map((campaign) => (
         <HealthCard key={campaign.title} campaign={campaign} />

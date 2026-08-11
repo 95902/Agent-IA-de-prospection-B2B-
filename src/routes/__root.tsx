@@ -15,18 +15,18 @@ import { Navigation } from "@/components/ui/Navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { Input } from "@/components/ui/Input";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ModeToggle } from "@/components/modeToggle";
+import { ModeToggle } from "@/components/ModeToggle";
 
 const RootLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <ThemeProvider defaultTheme="system" storageKey="app-theme">
       <div className="flex h-screen flex-col bg-background text-foreground">
-        <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4">
+        <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between border-b bg-background/95 backdrop-blur">
           <div className="flex items-center">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden pl-4">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle Navigation</span>
                 </Button>
@@ -41,16 +41,16 @@ const RootLayout = () => {
                 <Navigation />
               </SheetContent>
             </Sheet>
-            <div className="flex items-center gap-2 w-60 font-bold text-lg">
+            <div className="hidden pl-4 md:flex items-center gap-2 w-60 font-bold text-lg">
               <Bot className="h-6 w-6 text-primary" />
               <span className="text-nowrap">B2B Intelligence</span>
             </div>
           </div>
-          <div className="flex-1 px-4">
+          <div className="hidden md:flex flex-1 px-4">
             <Input placeholder="Rechercher..." />
           </div>
           <div className="flex items-center">
-            <div className="flex gap-4 px-4 items-center">
+            <div className="flex gap-2 items-center px-2">
               <Button variant="ghost" size="icon">
                 <BellDot className="h-5 w-5" />
                 <span className="sr-only">Notifications</span>
@@ -60,7 +60,7 @@ const RootLayout = () => {
               </Button>
               <ModeToggle />
             </div>
-            <div className="h-full flex items-center gap-4 border-l px-4">
+            <div className="h-full flex items-center gap-4 border-l px-2">
               <div className="flex flex-col ">
                 <span className="font-semibold text-nowrap">Taupin Fabien</span>
                 <p className="text-sm text-muted-foreground text-nowrap">
