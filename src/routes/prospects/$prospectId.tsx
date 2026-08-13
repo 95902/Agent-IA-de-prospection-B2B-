@@ -117,7 +117,7 @@ const PropspectId = () => {
 
         <div className="lg:w-2/3 h-full flex flex-col gap-4 rounded-lg">
           <Card className=" flex-1 border rounded-lg flex flex-col border-gray-400  gap-0">
-            <div className="w-full rounded-t-lg flex flex-col lg:flex-row justify-between lg:items-center border-b-2 p-4 bg-[#C6C6CD]/20">
+            <div className="w-full rounded-t-lg flex flex-col lg:flex-row justify-between lg:items-center border-b-2 p-4 bg-muted/40">
               <p className="text-gray-700 text-lg dark:text-white text-nowrap">
                 Logique de notation de l'IA
               </p>
@@ -160,7 +160,7 @@ const PropspectId = () => {
             </div>
           </Card>
           <Card className="border flex-col flex rounded-lg border-gray-400  gap-0">
-            <div className="w-full flex flex-col lg:flex-row justify-between rounded-t-lg lg:items-center p-4 bg-[#C6C6CD]/20">
+            <div className="w-full flex flex-col lg:flex-row justify-between rounded-t-lg lg:items-center p-4 bg-muted/40">
               <p className="text-gray-700 text-lg dark:text-white">
                 Historique des interactions
               </p>

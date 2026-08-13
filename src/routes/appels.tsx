@@ -67,7 +67,7 @@ const Calls = () => {
   return (
     <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
       <Card className="w-full lg:w-1/3 border rounded-lg h-full flex flex-col ">
-        <div className="w-full rounded-t flex justify-between items-center bg-[#C6C6CD]/20 border-b-2 p-4">
+        <div className="w-full rounded-t flex justify-between items-center bg-muted/40 border-b-2 p-4">
           <p className="text-xl">FILE D'ATTENTE</p>
           <div className="bg-blue-100 rounded-lg px-2 p-1 border border-blue-300 text-blue-700">
             14 chefs
