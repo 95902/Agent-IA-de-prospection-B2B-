@@ -1,12 +1,6 @@
 import { z } from "zod";
+import { LEVEL_VALUES, OBJECTIVE_VALUES } from "../seed";
 
-export const LEVEL_VALUES = ["Standard", "Elevé", "Urgent"] as const;
-
-export const OBJECTIVE_VALUES = [
-  "Génération de prospects",
-  "Études de marché",
-  "Recherche de partenariats",
-] as const;
 
 export const LEVELS = LEVEL_VALUES.map((val) => ({
   label: val,
