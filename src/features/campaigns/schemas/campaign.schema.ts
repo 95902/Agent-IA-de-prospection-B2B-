@@ -2,16 +2,6 @@ import { z } from "zod";
 import { LEVEL_VALUES, OBJECTIVE_VALUES } from "../seed";
 
 
-export const LEVELS = LEVEL_VALUES.map((val) => ({
-  label: val,
-  value: val,
-}));
-
-export const OBJECTIVES = OBJECTIVE_VALUES.map((val) => ({
-  label: val,
-  value: val,
-}));
-
 export const campaignFormSchema = z.object({
   campaignNumber: z
     .string()
