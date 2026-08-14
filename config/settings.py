@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
     tavily_api_key: str = ""  # enrichissement (#18) — auth Bearer, quota 1000/mois
 
+    # ---------- Qualité des prospects (#68) ----------
+    # Au-delà de N établissements actifs à la MÊME adresse, on considère qu'il
+    # s'agit d'une société de domiciliation (siège social / boîte aux lettres)
+    # et non d'un local d'exploitation. Calibré sur 40 garages parisiens réels :
+    # adresses ordinaires 3-134, domiciliations 778-44589 (cf. issue #68).
+    # ⚠️ Dépend de la densité urbaine — à réévaluer hors grande ville.
+    domiciliation_seuil: int = 300
+
     @property
     def postgres_dsn(self) -> str:
         return (
