@@ -20,12 +20,14 @@ export const Header = () => {
     <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between border-b bg-background/95 backdrop-blur">
       <div className="flex items-center">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger>
-            <Button variant="ghost" size="icon" className="md:hidden pl-4">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Navigation</span>
-            </Button>
-          </SheetTrigger>
+          <SheetTrigger
+            render={
+              <Button variant="ghost" size="icon" className="md:hidden pl-4">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Navigation</span>
+              </Button>
+            }
+          />
           <SheetContent side="left" className="w-64 p-0">
             <SheetHeader className="p-4 text-left border-b">
               <SheetTitle className="flex items-center gap-2">
