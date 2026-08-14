@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Card } from "@/components/ui/Card";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ import { MoveLeft, MoveRight } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 import type { ColumnConfig } from "@/components/DesktopTable";
+import { useNavigate } from "@tanstack/react-router";
 
 export interface CompanyData {
   id: string;
@@ -121,6 +123,7 @@ export const ProspectsTable = () => {
   const startIndex = (currentPage - 1) * rowPerPage;
   const endIndex = startIndex + rowPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
+  const navigate = useNavigate();
 
   const handlePrevious = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -156,11 +159,18 @@ export const ProspectsTable = () => {
     }
   };
 
+  const handleRowClick = (id: string) => {
+    navigate({
+      to: "/prospects/$prospectId",
+      params: { prospectId: id },
+    });
+  };
+
   return (
-    <div className="w-full h-full flex flex-col justify-between overflow-hidden border rounded-lg bg-white">
+    <Card className="w-full h-full flex flex-col justify-between overflow-hidden border rounded-lg ">
       <div className="flex-1 overflow-y-auto w-full">
         <Table className="w-full">
-          <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
+          <TableHeader className="sticky top-0  z-10 shadow-sm">
             <TableRow>
               {prospectColumns.map((column, idx) => (
                 <TableCell
@@ -181,12 +191,7 @@ export const ProspectsTable = () => {
                   className={`cursor-pointer transition-colors ${
                     isSelected ? "bg-slate-100/80 hover:bg-slate-100" : ""
                   }`}
-                  onClick={() => {
-                    setSelectedItems((prev) => ({
-                      ...prev,
-                      [item.id]: !prev[item.id],
-                    }));
-                  }}
+                  onClick={() => handleRowClick(item.id)}
                 >
                   <TableCell className="w-[10%] text-center">
                     <div
@@ -249,7 +254,7 @@ export const ProspectsTable = () => {
           </TableBody>
         </Table>
       </div>
-      <div className="shrink-0 border-t bg-slate-50/50 p-3">
+      <div className="shrink-0 border-t p-3">
         <div className="flex w-full items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-3">
             <p className="text-sm text-muted-foreground whitespace-nowrap">
@@ -264,7 +269,7 @@ export const ProspectsTable = () => {
               }}
             >
               <SelectTrigger
-                className="w-18 h-8 bg-white"
+                className="w-18 h-8"
                 id="select-rows-per-page"
               >
                 <SelectValue />
@@ -326,6 +331,6 @@ export const ProspectsTable = () => {
           </Pagination>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };

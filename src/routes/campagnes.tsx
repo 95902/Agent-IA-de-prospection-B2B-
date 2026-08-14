@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/Progress";
 import { CircleAlert, CircleCheck, TrendingUp } from "lucide-react";
 import image from "@/assets/Image.png";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Card } from "@/components/ui/Card";
 const LEVELS = [
   { label: "Standard", value: "Standard" },
   { label: "Elevé", value: "Elevé" },
@@ -43,9 +44,9 @@ function Campaigns() {
           Configurez vos paramètres de ciblage et de prospection pour commencer
           à trouver des prospects qualifiés.
         </h2>
-        <Breadcrumbs data={BREADCRUMBS} step={0}/>
+        <Breadcrumbs data={BREADCRUMBS} step={0} />
         <div className="w-full gap-4 flex flex-1">
-          <div className="w-full min-w-md h-fit overflow-hidden border rounded-lg p-4 bg-white shrink-0">
+          <Card className="w-full min-w-md h-fit overflow-hidden border rounded-lg p-4 shrink-0">
             <form className="flex flex-col gap-6 justify-between items-end ">
               <FieldGroup>
                 <FieldSet>
@@ -118,11 +119,11 @@ function Campaigns() {
                 Prochaine étape
               </Button>
             </form>
-          </div>
+          </Card>
         </div>
       </div>
       <div className="flex flex-col gap-4 h-full min-w-md">
-        <div className="max-w-md w-full border overflow-hidden rounded-xl bg-white shrink-0">
+        <Card className="max-w-md w-full border overflow-hidden rounded-xl shrink-0">
           <div className="flex flex-col gap-4 border-b rounded-t-lg p-8 bg-[#C6C6CD]/20">
             <p>Estimations en direct</p>
             <p>
@@ -130,7 +131,7 @@ function Campaigns() {
               Prospects
             </p>
           </div>
-          <div className="flex flex-col gap-6 p-8 w-full">
+          <div className="flex flex-col gap-6 px-8 py-4 w-full">
             <div className="flex flex-col items-center gap-2 w-full">
               <div className="flex justify-between items-center gap-1 w-full">
                 <p className="text-xs font-bold">Précision du profil</p>
@@ -159,15 +160,14 @@ function Campaigns() {
               </div>
             </div>
           </div>
-          <div className="border w-[90%] mx-4" />
-          <div className="flex  gap-2 items-center  p-8 ">
+          <div className="flex gap-2 items-center p-8 ">
             <CircleAlert />
             <p className="text-sm text-muted-foreground">
               Données mises à jour il y a 2 minutes
             </p>
           </div>
-        </div>
-        <div className="flex-1 flex flex-col max-w-md border-2 gap-6 overflow-hidden rounded-lg p-8 shrink-0 bg-[#C6C6CD]/20">
+        </Card>
+        <Card className="flex-1 flex flex-col max-w-md border-2 gap-6 overflow-hidden rounded-lg p-8 shrink-0 bg-[#C6C6CD]/20">
           <div className="flex items-center gap-2">
             <TrendingUp />
             <p>Estimations en direct</p>
@@ -178,7 +178,7 @@ function Campaigns() {
             actuellement une augmentation de 15 % des embauches pour les postes
             d'ingénierie.
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   );

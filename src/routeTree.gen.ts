@@ -8,190 +8,210 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as AppelsRouteImport } from "./routes/appels";
-import { Route as CampagnesRouteImport } from "./routes/campagnes";
-import { Route as ParametreRouteImport } from "./routes/parametre";
-import { Route as ProspectsRouteImport } from "./routes/prospects";
-import { Route as SupportRouteImport } from "./routes/support";
-import { Route as WorkspaceRouteImport } from "./routes/workspace";
-import { Route as InformationRouteImport } from "./routes/information";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppelsRouteImport } from './routes/appels'
+import { Route as CampagnesRouteImport } from './routes/campagnes'
+import { Route as InformationRouteImport } from './routes/information'
+import { Route as ParametreRouteImport } from './routes/parametre'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as WorkspaceRouteImport } from './routes/workspace'
+import { Route as ProspectsIndexRouteImport } from './routes/prospects/index'
+import { Route as ProspectsProspectIdRouteImport } from './routes/prospects/$prospectId'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AppelsRoute = AppelsRouteImport.update({
-  id: "/appels",
-  path: "/appels",
+  id: '/appels',
+  path: '/appels',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CampagnesRoute = CampagnesRouteImport.update({
-  id: "/campagnes",
-  path: "/campagnes",
+  id: '/campagnes',
+  path: '/campagnes',
   getParentRoute: () => rootRouteImport,
-} as any);
-const ParametreRoute = ParametreRouteImport.update({
-  id: "/parametre",
-  path: "/parametre",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const ProspectsRoute = ProspectsRouteImport.update({
-  id: "/prospects",
-  path: "/prospects",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const SupportRoute = SupportRouteImport.update({
-  id: "/support",
-  path: "/support",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const WorkspaceRoute = WorkspaceRouteImport.update({
-  id: "/workspace",
-  path: "/workspace",
-  getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const InformationRoute = InformationRouteImport.update({
-  id: "/information",
-  path: "/information",
+  id: '/information',
+  path: '/information',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
+const ParametreRoute = ParametreRouteImport.update({
+  id: '/parametre',
+  path: '/parametre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkspaceRoute = WorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProspectsIndexRoute = ProspectsIndexRouteImport.update({
+  id: '/prospects/',
+  path: '/prospects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProspectsProspectIdRoute = ProspectsProspectIdRouteImport.update({
+  id: '/prospects/$prospectId',
+  path: '/prospects/$prospectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/appels": typeof AppelsRoute;
-  "/campagnes": typeof CampagnesRoute;
-  "/parametre": typeof ParametreRoute;
-  "/prospects": typeof ProspectsRoute;
-  "/support": typeof SupportRoute;
-  "/workspace": typeof WorkspaceRoute;
-  "/information": typeof WorkspaceRoute;
+  '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/information': typeof InformationRoute
+  '/parametre': typeof ParametreRoute
+  '/support': typeof SupportRoute
+  '/workspace': typeof WorkspaceRoute
+  '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/appels": typeof AppelsRoute;
-  "/campagnes": typeof CampagnesRoute;
-  "/parametre": typeof ParametreRoute;
-  "/prospects": typeof ProspectsRoute;
-  "/support": typeof SupportRoute;
-  "/workspace": typeof WorkspaceRoute;
-  "/information": typeof WorkspaceRoute;
+  '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/information': typeof InformationRoute
+  '/parametre': typeof ParametreRoute
+  '/support': typeof SupportRoute
+  '/workspace': typeof WorkspaceRoute
+  '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/prospects': typeof ProspectsIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/appels": typeof AppelsRoute;
-  "/campagnes": typeof CampagnesRoute;
-  "/parametre": typeof ParametreRoute;
-  "/prospects": typeof ProspectsRoute;
-  "/support": typeof SupportRoute;
-  "/workspace": typeof WorkspaceRoute;
-  "/information": typeof WorkspaceRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/appels': typeof AppelsRoute
+  '/campagnes': typeof CampagnesRoute
+  '/information': typeof InformationRoute
+  '/parametre': typeof ParametreRoute
+  '/support': typeof SupportRoute
+  '/workspace': typeof WorkspaceRoute
+  '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/appels"
-    | "/campagnes"
-    | "/parametre"
-    | "/prospects"
-    | "/support"
-    | "/workspace"
-    | "/information";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/appels'
+    | '/campagnes'
+    | '/information'
+    | '/parametre'
+    | '/support'
+    | '/workspace'
+    | '/prospects/$prospectId'
+    | '/prospects/'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/appels"
-    | "/campagnes"
-    | "/parametre"
-    | "/prospects"
-    | "/support"
-    | "/workspace"
-    | "/information";
+    | '/'
+    | '/appels'
+    | '/campagnes'
+    | '/information'
+    | '/parametre'
+    | '/support'
+    | '/workspace'
+    | '/prospects/$prospectId'
+    | '/prospects'
   id:
-    | "__root__"
-    | "/"
-    | "/appels"
-    | "/campagnes"
-    | "/parametre"
-    | "/prospects"
-    | "/support"
-    | "/workspace"
-    | "/information";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/appels'
+    | '/campagnes'
+    | '/information'
+    | '/parametre'
+    | '/support'
+    | '/workspace'
+    | '/prospects/$prospectId'
+    | '/prospects/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AppelsRoute: typeof AppelsRoute;
-  CampagnesRoute: typeof CampagnesRoute;
-  ParametreRoute: typeof ParametreRoute;
-  ProspectsRoute: typeof ProspectsRoute;
-  SupportRoute: typeof SupportRoute;
-  WorkspaceRoute: typeof WorkspaceRoute;
-  InformationRoute: typeof InformationRoute;
+  IndexRoute: typeof IndexRoute
+  AppelsRoute: typeof AppelsRoute
+  CampagnesRoute: typeof CampagnesRoute
+  InformationRoute: typeof InformationRoute
+  ParametreRoute: typeof ParametreRoute
+  SupportRoute: typeof SupportRoute
+  WorkspaceRoute: typeof WorkspaceRoute
+  ProspectsProspectIdRoute: typeof ProspectsProspectIdRoute
+  ProspectsIndexRoute: typeof ProspectsIndexRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/appels": {
-      id: "/appels";
-      path: "/appels";
-      fullPath: "/appels";
-      preLoaderRoute: typeof AppelsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/campagnes": {
-      id: "/campagnes";
-      path: "/campagnes";
-      fullPath: "/campagnes";
-      preLoaderRoute: typeof CampagnesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/parametre": {
-      id: "/parametre";
-      path: "/parametre";
-      fullPath: "/parametre";
-      preLoaderRoute: typeof ParametreRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/prospects": {
-      id: "/prospects";
-      path: "/prospects";
-      fullPath: "/prospects";
-      preLoaderRoute: typeof ProspectsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/support": {
-      id: "/support";
-      path: "/support";
-      fullPath: "/support";
-      preLoaderRoute: typeof SupportRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/workspace": {
-      id: "/workspace";
-      path: "/workspace";
-      fullPath: "/workspace";
-      preLoaderRoute: typeof WorkspaceRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/information": {
-      id: "/information";
-      path: "/information";
-      fullPath: "/information";
-      preLoaderRoute: typeof WorkspaceRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appels': {
+      id: '/appels'
+      path: '/appels'
+      fullPath: '/appels'
+      preLoaderRoute: typeof AppelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campagnes': {
+      id: '/campagnes'
+      path: '/campagnes'
+      fullPath: '/campagnes'
+      preLoaderRoute: typeof CampagnesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/information': {
+      id: '/information'
+      path: '/information'
+      fullPath: '/information'
+      preLoaderRoute: typeof InformationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parametre': {
+      id: '/parametre'
+      path: '/parametre'
+      fullPath: '/parametre'
+      preLoaderRoute: typeof ParametreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workspace': {
+      id: '/workspace'
+      path: '/workspace'
+      fullPath: '/workspace'
+      preLoaderRoute: typeof WorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prospects/': {
+      id: '/prospects/'
+      path: '/prospects'
+      fullPath: '/prospects/'
+      preLoaderRoute: typeof ProspectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prospects/$prospectId': {
+      id: '/prospects/$prospectId'
+      path: '/prospects/$prospectId'
+      fullPath: '/prospects/$prospectId'
+      preLoaderRoute: typeof ProspectsProspectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -199,12 +219,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppelsRoute: AppelsRoute,
   CampagnesRoute: CampagnesRoute,
+  InformationRoute: InformationRoute,
   ParametreRoute: ParametreRoute,
-  ProspectsRoute: ProspectsRoute,
   SupportRoute: SupportRoute,
   WorkspaceRoute: WorkspaceRoute,
-  InformationRoute: InformationRoute,
-};
+  ProspectsProspectIdRoute: ProspectsProspectIdRoute,
+  ProspectsIndexRoute: ProspectsIndexRoute,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

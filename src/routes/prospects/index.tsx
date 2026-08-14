@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/Select";
 import { ProspectsTable } from "@/components/ProspectsTable";
 import { useState } from "react";
+import { Card } from "@/components/ui/Card";
 
 const NAFCodes = [
   { label: "NAF", value: "" },
@@ -39,22 +40,22 @@ const Propspect = () => {
   const [nafCode, setNafCode] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const employeeRanges = ["1-50", "51-100", "101-200", "201-500"];
-
+  console.log(departments, "dep");
   const handleReset = () => {
     setNumberOfEmployees(null);
     setNafCode("");
     setDepartments([]);
   };
 
-  const toggleDepartment = (dep: string, checked: boolean) => {
-    setDepartments((prev) =>
-      checked ? [...prev, dep] : prev.filter((item) => item !== dep),
-    );
-  };
+  // const toggleDepartment = (dep: string, checked: boolean) => {
+  //   setDepartments((prev) =>
+  //     checked ? [...prev, dep] : prev.filter((item) => item !== dep),
+  //   );
+  // };
 
   return (
     <div className="w-full h-full flex gap-4">
-      <div className="w-full max-w-md overflow-hidden border rounded-lg p-4 bg-white shrink-0">
+      <Card className="w-full max-w-md overflow-hidden border rounded-lg p-4 shrink-0">
         <form>
           <FieldGroup>
             <FieldSet>
@@ -72,7 +73,7 @@ const Propspect = () => {
                   <FieldLabel>Départements</FieldLabel>
                   <div className="flex flex-col gap-2 mt-2">
                     {departmentList.map((department) => {
-                      const isChecked = departments.includes(department);
+                      // const isChecked = departments.includes(department);
                       return (
                         <label
                           key={department}
@@ -80,10 +81,10 @@ const Propspect = () => {
                         >
                           <Checkbox
                             id={`dep-${department}`}
-                            checked={isChecked}
-                            onCheckedChange={(checked) =>
-                              toggleDepartment(department, !!checked)
-                            }
+                            // checked={isChecked}
+                            // onCheckedChange={(checked) =>
+                            //   toggleDepartment(department, !!checked)
+                            // }
                           />
                           <span>{department}</span>
                         </label>
@@ -140,12 +141,12 @@ const Propspect = () => {
             Appliquer les filtres
           </Button>
         </form>
-      </div>
+      </Card>
       <ProspectsTable />
     </div>
   );
 };
 
-export const Route = createFileRoute("/prospects")({
+export const Route = createFileRoute("/prospects/")({
   component: Propspect,
 });
