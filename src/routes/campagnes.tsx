@@ -11,10 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Progress } from "@/components/ui/Progress";
 import { CircleAlert, CircleCheck, TrendingUp } from "lucide-react";
 import image from "@/assets/Image.png";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 const LEVELS = [
   { label: "Standard", value: "Standard" },
   { label: "Elevé", value: "Elevé" },
@@ -42,24 +43,7 @@ function Campaigns() {
           Configurez vos paramètres de ciblage et de prospection pour commencer
           à trouver des prospects qualifiés.
         </h2>
-        <div className="flex gap-2 w-full items-center ">
-          {BREADCRUMBS.map((crumb, index) => {
-            const isLast = index === BREADCRUMBS.length - 1;
-            return (
-              <React.Fragment key={index}>
-                <div className="min-w-8 min-h-8 rounded-full bg-blue-500 shrink-0 items-center justify-center flex text-white">
-                  {index}
-                </div>
-                <p className="text-blue-500 whitespace-nowrap shrink-0">
-                  {crumb}
-                </p>
-                {!isLast && (
-                  <div className="w-full min-h-1 bg-blue-500 rounded-lg" />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
+        <Breadcrumbs data={BREADCRUMBS} step={0}/>
         <div className="w-full gap-4 flex flex-1">
           <div className="w-full min-w-md h-fit overflow-hidden border rounded-lg p-4 bg-white shrink-0">
             <form className="flex flex-col gap-6 justify-between items-end ">
@@ -130,7 +114,7 @@ function Campaigns() {
                   </FieldGroup>
                 </FieldSet>
               </FieldGroup>
-              <Button type="submit" className="w-64 rounded-md bg-blue-500">
+              <Button type="submit" className="w-64">
                 Prochaine étape
               </Button>
             </form>
