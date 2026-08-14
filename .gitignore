@@ -22,6 +22,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.tanstack/
 
 # Editor directories and files
 .vscode/*
@@ -41,17 +42,15 @@ dist-ssr
 # Python
 __pycache__/
 *.py[cod]
-
-.venv/
-venv/
-.pytest_cache/
-=======
 *.egg-info/
 .venv/
 venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Node — pnpm est le gestionnaire de paquets officiel (pnpm-lock.yaml versionné)
+package-lock.json
 
 # Données / dumps
 backups/

@@ -3,3 +3,10 @@
 # en CRLF au checkout, et /bin/sh dans les containers Linux plante sur les \r
 # (ex. docker/ollama/entrypoint.sh -> boucle de redémarrage). Voir issue #8.
 *.sh text eol=lf
+
+# routeTree.gen.ts est régénéré en LF pur par le plugin TanStack Router
+# (@tanstack/router-plugin) à chaque démarrage de Vite — avec
+# core.autocrlf=true (défaut Windows) ça le fait apparaître "modifié" en
+# permanence dans `git status` sans diff réel. On force LF pour matcher
+# ce que le codegen écrit réellement.
+src/routeTree.gen.ts text eol=lf

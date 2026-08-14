@@ -1,3 +1,28 @@
+# Agent IA de Prospection B2B
+
+Front-end React + TypeScript + Vite du projet. Voir `CLAUDE.md` à la racine pour le contexte produit complet (le back Python vit dans le même repo, à la racine, aux côtés de ce front).
+
+## Lancer le front-end
+
+Prérequis : Node.js installé.
+
+```bash
+npm install       # installe les dépendances (une seule fois, ou après un changement de package.json)
+npm run dev       # démarre le serveur de dev Vite
+```
+
+Le serveur de dev démarre sur **http://localhost:5173/** avec hot-reload (HMR).
+
+Autres commandes utiles :
+
+```bash
+npm run build     # build de production (tsc -b && vite build)
+npm run preview   # sert le build de production en local
+npm run lint      # eslint
+```
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
