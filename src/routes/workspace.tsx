@@ -10,7 +10,7 @@ import { WorkspaceForm4 } from "@/features/workspaces/components/WorkspaceForm4"
 import { STEPS } from "@/features/workspaces/seed";
 
 const Workspace = () => {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(2);
 
   const handleNext = () => {
     setStep((prev) => Math.min(prev + 1, STEPS.length - 1));

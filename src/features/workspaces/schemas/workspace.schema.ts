@@ -30,3 +30,13 @@ export const WorkspaceFormSchema2 = z.object({
 });
 
 export type WorkspaceForm2Values = z.infer<typeof WorkspaceFormSchema2>;
+
+export const WorkspaceFormSchema3 = z.object({
+  customerName: z
+    .string()
+    .min(2, "Le nom du client doit faire au moins 2 caractères"),
+  positiveKeywords: z.string(),
+  negativeKeywords: z.string(),
+});
+
+export type WorkspaceForm3Values = z.infer<typeof WorkspaceFormSchema3>;
