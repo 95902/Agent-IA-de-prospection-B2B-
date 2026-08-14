@@ -10,25 +10,25 @@ import {
 } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { campaignFormSchema, LEVELS, OBJECTIVES } from "@/features/campaigns/schemas/campaign.schema";
+import { campaignFormSchema } from "@/features/campaigns/schemas/campaign.schema";
 import { useForm } from "@tanstack/react-form";
+import { LEVEL_VALUES, OBJECTIVE_VALUES } from "../seed";
 
 export const CampaignForm = () => {
-
-      const form = useForm({
-        defaultValues: {
-          campaignNumber: "",
-          objective: "",
-          level: "",
-        },
-        validators: {
-          onSubmit: campaignFormSchema,
-        },
-        onSubmit: async ({ value }) => {
-          console.log("Données du formulaire soumises :", value);
-          // Traitement de l'étape suivante ici
-        },
-      });
+  const form = useForm({
+    defaultValues: {
+      campaignNumber: "",
+      objective: "",
+      level: "",
+    },
+    validators: {
+      onSubmit: campaignFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      console.log("Données du formulaire soumises :", value);
+      // Traitement de l'étape suivante ici
+    },
+  });
 
   return (
     <Card className="min-w-full h-fit overflow-hidden border rounded-lg p-4 shrink-0">
@@ -84,9 +84,9 @@ export const CampaignForm = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {OBJECTIVES.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
+                      {OBJECTIVE_VALUES.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -120,9 +120,9 @@ export const CampaignForm = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {LEVELS.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
+                      {LEVEL_VALUES.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
                         </SelectItem>
                       ))}
                     </SelectGroup>

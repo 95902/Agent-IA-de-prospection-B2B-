@@ -1,7 +1,3 @@
-export const DEPARTEMENTS = [
-  { label: "Engeenering", value: "Engeenering" },
-  { label: "Sales", value: "Sales" },
-  { label: "BTP", value: "BTP" },
-];
+export const DEPARTEMENTS_VALUES = ["Engeenering", "Sales", "BTP"] as const;
 
-export const STEPS = ["Information", "Cible", "Profile ICP", "Confirmation"];
+export const STEPS = ["Information", "Cible", "Profile ICP", "Confirmation"] as const;

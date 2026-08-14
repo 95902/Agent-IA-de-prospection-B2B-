@@ -10,7 +10,7 @@ import { WorkspaceForm4 } from "@/features/workspaces/components/WorkspaceForm4"
 import { STEPS } from "@/features/workspaces/seed";
 
 const Workspace = () => {
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState<number>(1);
 
   const handleNext = () => {
     setStep((prev) => Math.min(prev + 1, STEPS.length - 1));
@@ -24,7 +24,7 @@ const Workspace = () => {
 
   return (
     <div className="flex flex-col items-center gap-8 justify-center w-full h-full">
-      <Breadcrumbs data={STEPS} step={step} />
+      <Breadcrumbs data={[...STEPS]} step={step} />
 
       {step === 3 ? (
         <WorkspaceForm4 onNext={handleSubmit} onPrevious={handlePrevious} />
