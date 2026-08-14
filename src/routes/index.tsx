@@ -64,7 +64,7 @@ export interface PropspectTableProps {
   contactRole: string;
   status: "Qualified" | "Negotiation" | "High Priority" | "Discovery";
   score: number;
-  value: number; // Ou "$42,000" sous forme de string si tu préfères ne pas la formater
+  value: number;
   logo: LucideIcon;
   logoBgColor: string;
   logoTextColor: string;
@@ -311,11 +311,12 @@ export const PropspectTableSeed: PropspectTableProps[] = [
     logoTextColor: "text-fuchsia-600 dark:text-fuchsia-400",
   },
 ];
+
 const Dashboard = () => {
   return (
     <div className="flex flex-col gap-6">
       <HeaderPropspect />
-      <div className="flex flex-wrap gap-4">
+      <div className="flex overflow-x-scroll gap-4 p-1">
         {KPICardSeed.map((kpi, index) => (
           <KPICard
             key={index}
@@ -329,7 +330,7 @@ const Dashboard = () => {
           />
         ))}
       </div>
-      <div className="flex w-full gap-4">
+      <div className="flex flex-col w-full lg:flex-row gap-4">
         <ChartProspect />
         <CampagneHealth />
       </div>

@@ -22,7 +22,7 @@ import {
 const PropspectId = () => {
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4">
         <div className="flex flex-col space-y-1">
           <CardTitle className="font-bold text-2xl">Alexander Vance</CardTitle>
         </div>
@@ -38,9 +38,9 @@ const PropspectId = () => {
           </Button>
         </div>
       </div>
-      <div className="flex-1 flex h-full gap-4">
-        <div className="h-full w-1/3 flex flex-col gap-4">
-          <Card className="h-1/2 w-full border flex flex-col gap-6 border-gray-400 rounded-lg p-8">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 lg:w-1/3 flex flex-col gap-4">
+          <Card className="min-h-fit overflow-auto  w-full border flex flex-col gap-4 border-gray-400 rounded-lg p-8">
             <div className="flex gap-2 items-center">
               <User size={70} />
               <div className="flex flex-col">
@@ -82,13 +82,13 @@ const PropspectId = () => {
             </div>
           </Card>
 
-          <div className="h-1/2 w-full bg-black gap-6 flex flex-col rounded-lg p-4 dark:border-white dark:border">
+          <div className=" gap-4 w-full bg-black flex flex-col rounded-lg p-4 dark:border-white dark:border">
             <div className="flex justify-between items-center">
               <p className="text-xl font-bold text-white">
                 Score global des prospects
               </p>
               <div className="bg-blue-500 rounded-lg px-4 py-2">
-                <p className="text-white font-bold">analyse IA</p>
+                <p className="text-white text-nowrap font-bold">analyse IA</p>
               </div>
             </div>
 
@@ -115,19 +115,19 @@ const PropspectId = () => {
           </div>
         </div>
 
-        <div className="w-2/3 h-full flex flex-col gap-4 rounded-lg">
-          <Card className="border rounded-lg flex flex-col border-gray-400 h-2/5 gap-0">
-            <div className="w-full rounded-t-lg flex justify-between items-center border-b-2 p-4 bg-[#C6C6CD]/20">
-              <p className="text-gray-700 text-lg dark:text-white">
+        <div className="lg:w-2/3 h-full flex flex-col gap-4 rounded-lg">
+          <Card className=" flex-1 border rounded-lg flex flex-col border-gray-400  gap-0">
+            <div className="w-full rounded-t-lg flex flex-col lg:flex-row justify-between lg:items-center border-b-2 p-4 bg-muted/40">
+              <p className="text-gray-700 text-lg dark:text-white text-nowrap">
                 Logique de notation de l'IA
               </p>
               <p className="text-blue-500">Afficher les poids détaillés</p>
             </div>
-            <div className="flex-1 flex p-6 gap-6">
-              <div className="w-1/2 h-full flex justify-between flex-col gap-4">
-                <div className="w-full justify-between flex items-center">
+            <div className="flex-1 flex flex-col lg:flex-row p-6 gap-6">
+              <div className="w-full lg:w-1/2 h-full flex justify-between flex-col gap-4">
+                <div className="w-full justify-between flex flex-col lg:flex-row lg:items-center gap-1">
                   <p className="font-bold">Analyse sémantique LLM</p>
-                  <p className="text-green-500">+45 pts</p>
+                  <p className="text-green-500 text-nowrap">+45 pts</p>
                 </div>
                 <p className="text-muted-foreground flex-1 overflow-hidden">
                   Une correspondance a été trouvée entre une publication récente
@@ -141,10 +141,10 @@ const PropspectId = () => {
                   indicatorClassName="bg-green-500"
                 />
               </div>
-              <div className="w-1/2 h-full flex justify-between flex-col gap-4">
-                <div className="w-full justify-between flex items-center">
+              <div className="w-full lg:w-1/2 h-full flex justify-between flex-col gap-4">
+                <div className="w-full justify-between flex flex-col lg:flex-row lg:items-center gap-1">
                   <p className="font-bold">Score de match intégré</p>
-                  <p className="text-green-500">+32 pts</p>
+                  <p className="text-green-500 text-nowrap">+32 pts</p>
                 </div>
                 <p className="text-muted-foreground flex-1 overflow-hidden">
                   Vector similarity of 0.89 with 'Champion' segment. High
@@ -159,8 +159,8 @@ const PropspectId = () => {
               </div>
             </div>
           </Card>
-          <Card className="border flex-col flex rounded-lg border-gray-400 h-3/5 gap-0">
-            <div className="w-full flex justify-between rounded-t-lg items-center p-4 bg-[#C6C6CD]/20">
+          <Card className="border flex-col flex rounded-lg border-gray-400  gap-0">
+            <div className="w-full flex flex-col lg:flex-row justify-between rounded-t-lg lg:items-center p-4 bg-muted/40">
               <p className="text-gray-700 text-lg dark:text-white">
                 Historique des interactions
               </p>
@@ -174,7 +174,7 @@ const PropspectId = () => {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col gap-8 p-4 overflow-scroll">
+            <div className="flex flex-col gap-8 p-4 overflow-scroll">
               <div className="flex flex-col gap-2 w-full">
                 <div className="w-full justify-between flex items-center">
                   <p className="font-bold text-lg">Analyse sémantique LLM</p>

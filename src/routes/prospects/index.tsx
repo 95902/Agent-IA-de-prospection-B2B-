@@ -54,8 +54,8 @@ const Propspect = () => {
   // };
 
   return (
-    <div className="w-full h-full flex gap-4">
-      <Card className="w-full max-w-md overflow-hidden border rounded-lg p-4 shrink-0">
+    <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
+      <Card className="w-full lg:max-w-md h-fit lg:h-full overflow-hidden border rounded-lg p-4 shrink-0">
         <form>
           <FieldGroup>
             <FieldSet>

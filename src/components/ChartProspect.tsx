@@ -40,10 +40,10 @@ const chartConfig = {
 
 export function ChartProspect() {
   return (
-    <Card className="w-full rounded-lg shadow-none">
+    <Card className="flex-1 rounded-lg">
       <CardHeader>
-        <div className="flex items-center justify-between space-y-0">
-          <div className="flex flex-col space-y-1">
+        <div className="flex items-center justify-between pt-4">
+          <div className="flex flex-col">
             <CardTitle>Diriger l'évolution</CardTitle>
             <CardDescription>
               Croissance projetée contre croissance réelle au fil du temps
