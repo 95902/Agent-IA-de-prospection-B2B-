@@ -34,17 +34,32 @@ ICP_SEEDS: dict[str, dict] = {
             "de 2 à 15 salariés, en activité depuis au moins 3 ans. Ciblent "
             "les réparateurs multi-marques plutôt que les concessions."
         ),
-        # Codes NAF : réparation auto (4520Z), vente auto (4511Z),
-        # réparation moto (4540Z — non inclus, hors cible), entretien/carrosserie
-        # (4531Z), installation équipements auto (4532Z).
-        "codes_naf": ["4520Z", "4511Z", "4531Z", "4532Z"],
+        # Codes NAF (issue #63) : `4520Z` N'EXISTE PAS. 4520 est une *classe*,
+        # subdivisée en deux sous-classes — seules celles-ci sont portées par les
+        # établissements Sirene :
+        #   4520A entretien/réparation de véhicules légers (2 971 actifs à Paris)
+        #   4520B entretien/réparation d'autres véhicules   (116 actifs à Paris)
+        # Interroger `45.20Z` renvoie HTTP 404, que `_fetch_etablissements` traite
+        # comme « aucun résultat » : la collecte était donc silencieusement vide
+        # sur le code de ciblage principal, sans la moindre erreur visible.
+        # Autres codes : vente auto (4511Z), entretien/carrosserie (4531Z),
+        # installation d'équipements auto (4532Z). Réparation moto (4540Z) hors cible.
+        "codes_naf": ["4520A", "4520B", "4511Z", "4531Z", "4532Z"],
         "departements": [],  # pas de restriction géo dans l'exemple pilote
         "effectif_min": 2,
         "effectif_max": 15,
         "anciennete_min_ans": 3,
         "exiger_site_web": False,
         "exiger_email": True,
-        "mots_cles_positifs": ["réparation", "multi-marques", "atelier"],
+        # Vocabulaire sectoriel de la cible. Sert deux usages : signaux positifs
+        # du scoring règles (#24) ET mots non discriminants pour le filtre
+        # nom↔domaine de l'enrichissement (#18) — dans une campagne garages,
+        # « garage » ne distingue aucun prospect d'un autre.
+        "mots_cles_positifs": [
+            "réparation", "multi-marques", "atelier", "garage", "auto",
+            "automobile", "carrosserie", "mécanique", "pièces", "pneus",
+            "pare-brise", "service",
+        ],
         "mots_cles_negatifs": ["concession", "groupe", "centrale"],
     },
 }
