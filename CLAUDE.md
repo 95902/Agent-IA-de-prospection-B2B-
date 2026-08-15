@@ -53,12 +53,12 @@ Durée   : 9 semaines MVP
 | L'architecture globale, la BDD, Docker, les APIs | `docs/ARCHITECTURE.md` |
 | Le scoring hybride, les prompts Claude (générés dynamiquement depuis l'ICP client), les embeddings | `docs/SCORING.md` |
 | Une issue spécifique (Sprint 0 à Sprint 4, 41 issues au total sur GitHub) | `docs/ISSUES.md` |
-| Les règles légales (Bloctel, RGPD) | `docs/LEGAL.md` |
+| Les règles légales (opposition commerciale R123-232, RGPD, loi 2025-594) | `docs/LEGAL.md` |
 | Le produit, les user stories, les KPIs | `docs/PRD.md` |
 
 ## Règles absolues — ne jamais ignorer
 
-1. **Bloctel OBLIGATOIRE** avant tout appel prospect, avec **re-vérification tous les 30 jours max** pour tout prospect non encore appelé. Lire `docs/LEGAL.md`.
+1. **Opposition commerciale OBLIGATOIRE** (art. R123-232 c. com.) avant tout enrichissement tiers ou file de contact — `utils/opposition_commerciale.py::peut_etre_contacte()`, **fermé par défaut**. ⚠️ **Bloctel a été supprimé** par la loi n° 2025-594 au **11 août 2026** (opt-in B2C, intérêt légitime B2B inchangé) : ne plus fonder aucune logique d'appel dessus. L'appel = Phase 2 (V1 email-first). Lire `docs/LEGAL.md`.
 2. **Sources légales uniquement** : Sirene INSEE, Tavily, Pappers. Zéro scraping illégal.
 3. **Aucun ICP codé en dur** : codes NAF, tranche d'effectif, ancienneté, zone géographique, mots-clés positifs/négatifs viennent tous de `criteres_ciblage` / `icp_profiles` en base, jamais de constantes Python. Un client = un ICP = une configuration.
 4. **Exclusions configurables par client** (`criteres_ciblage.mots_cles_negatifs`) — jamais de liste de marques/groupes codée en dur. Un prospect qui matche une exclusion → score = 0 automatiquement.
@@ -88,8 +88,10 @@ python main.py --client-id <uuid> --depts 75,92 --limit 50 --dry-run
 pytest tests/ -v
 ```
 
-## Coût mensuel MVP (par client actif) : ~70-90€
+## Coût mensuel MVP (par client actif) : ~125-140€
 
-Dropcontact 24€ + Tavily 20€ + Claude API ~10€ + VPS OVH ~15-30€ + Bloctel ~5€
+Dropcontact ~79€ + Tavily 20€ + Claude API ~10€ + VPS OVH ~15-30€
+(Bloctel supprimé — loi 2025-594. La chaîne A OSM/Pappers est **gratuite** et
+réduit ce coût quand elle suffit : viser Dropcontact en dernier recours.)
 
 @agents.md

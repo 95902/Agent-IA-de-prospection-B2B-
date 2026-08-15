@@ -252,8 +252,9 @@ LANGCHAIN_PROJECT=prospection-b2b
 # APIs collecte
 INSEE_API_KEY=...              # portail-api.insee.fr — header X-INSEE-Api-Key-Integration, base api-sirene/3.11, 30 req/min
 TAVILY_API_KEY=tvly-...        # 1000 req/mois gratuit
-BLOCTEL_API_KEY=...            # OBLIGATOIRE LÉGALEMENT
-DROPCONTACT_API_KEY=...        # 24€/mois
+PAPPERS_API_KEY=...            # opposition commerciale R123-232 (1 crédit/entreprise)
+DROPCONTACT_API_KEY=...        # ~79€/mois selon volume — dernier recours (chaîne gratuite d'abord)
+# BLOCTEL supprimé (loi n° 2025-594, 11 août 2026) — voir docs/LEGAL.md
 
 # Paramètres campagne — valeurs d'EXEMPLE uniquement.
 # En production, ces critères viennent de la table criteres_ciblage du
