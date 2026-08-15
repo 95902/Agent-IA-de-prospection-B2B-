@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
     tavily_api_key: str = ""  # enrichissement (#18) — auth Bearer, quota 1000/mois
 
+    # ---------- APIs enrichissement ----------
+    pappers_api_key: str = ""      # API Entreprise (auth : query param `api_token`)
+    dropcontact_api_key: str = ""  # emails B2B (auth : header `X-Access-Token`)
+
     # ---------- Qualité des prospects (#68) ----------
     # Au-delà de N établissements actifs à la MÊME adresse, on considère qu'il
     # s'agit d'une société de domiciliation (siège social / boîte aux lettres)
