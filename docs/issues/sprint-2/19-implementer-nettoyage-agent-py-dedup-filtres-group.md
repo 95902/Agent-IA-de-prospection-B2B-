@@ -18,19 +18,20 @@ Nettoyer et filtrer les prospects avant scoring, en appliquant les exclusions **
 `agents/nettoyage_agent.py`
 
 ## Actions
-- [ ] **Dédoublonnage** par SIRET (marque `prospects.doublon = TRUE` sur les doublons, ne les supprime pas)
-- [ ] **Normalisation E.164** des téléphones (réutilise le validator de #10)
-- [ ] **Vérification Bloctel** — appelle `utils/bloctel.py` (#20) sur tous les numéros du batch
-- [ ] **Exclusions client** — applique `criteres_ciblage.mots_cles_negatifs` via `_matche_exclusion` (matching par mot entier, pas sous-chaîne — voir SCORING.md et #24) ; un prospect qui matche → score forcé à 0 en aval
-- [ ] **Filtre effectif hors cible** — exclut (ou marque `invalide`) les prospects hors de la fourchette `effectif_min`/`effectif_max` de l'ICP de la campagne
+- [x] **Dédoublonnage** par SIRET (marque `prospects.doublon = TRUE` sur les doublons, ne les supprime pas)
+- [x] **Garde d'opposition commerciale** — ⚠️ Bloctel supprimé (loi 2025-594) : remplacé par `utils/opposition_commerciale.py::marquer_opposition` (art. R123-232, `peut_etre_contacte()` fermé par défaut). Budgété en crédits Pappers, exécuté **uniquement sur les survivants** des filtres locaux (min-argent).
+- [x] **Exclusions client** — applique `criteres_ciblage.mots_cles_negatifs` via `_matche_exclusion` (matching par mot entier, pas sous-chaîne — voir SCORING.md et #24) ; marqué dans `raw_data['nettoyage']`, score forcé à 0 en aval par le scoring (#24)
+- [x] **Filtre effectif hors cible** — marque (ne supprime pas) les prospects hors `effectif_min`/`effectif_max` ; effectif inconnu → non écarté
+- [x] **Marquage domiciliation** (#68) intégré à la même passe (qualité)
+- [ ] ~~Normalisation E.164~~ : déjà faite par le validator du modèle (#10) à la construction du `Prospect` — pas de re-normalisation ici
 
 ## Contraintes
 - Aucune liste de marques/groupes codée en dur — uniquement `criteres_ciblage.mots_cles_negatifs` du client (CLAUDE.md règle #4)
-- Un numéro `bloctel_ok = NULL` (non vérifié) doit être traité comme non-appelable, jamais comme "appelable par défaut" (voir `docs/LEGAL.md` Règle 2)
+- Opposition **fermée par défaut** : un prospect non vérifié n'est pas contactable — `peut_etre_contacte()`, jamais `not est_oppose()` (voir `docs/LEGAL.md`)
 
 ## Critères d'acceptance
-- [ ] Aucun doublon SIRET dans `file_appel`
-- [ ] Aucun prospect matchant une exclusion ICP de test ne reste `qualifie`
-- [ ] 100% des prospects transmis au scoring ont un statut Bloctel connu (`TRUE`/`FALSE`, plus de `NULL` non traité)
+- [x] Aucun doublon SIRET actif transmis au contact (marqué `doublon = TRUE`)
+- [x] Aucun prospect matchant une exclusion ICP de test n'est envoyé aux enrichisseurs tiers / à la file de contact
+- [x] Les prospects écartés localement (dédup/exclusion/effectif) ne consomment aucun crédit d'opposition
 
 
