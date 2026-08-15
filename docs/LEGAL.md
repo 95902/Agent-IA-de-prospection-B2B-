@@ -1,77 +1,7 @@
 # LEGAL.md — Obligations légales & conformité (générique, tous secteurs)
 
 > ⚠️ Ce fichier est CRITIQUE. Ne jamais bypasser ces règles.
-> Le non-respect de Bloctel expose à une amende jusqu'à 75 000€.
 > Ces obligations s'appliquent à **tout client**, quel que soit son secteur cible.
-
-## Bloctel — Liste d'opposition au démarchage téléphonique
-
-### Obligation légale
-
-Tout professionnel effectuant de la prospection téléphonique commerciale
-en France **doit vérifier** les numéros contre la liste Bloctel avant appel.
-
-**Base légale :** Article L223-1 et suivants du Code de la consommation.
-**Amende :** Jusqu'à 75 000€ par infraction constatée.
-**Exception B2B :** La vérification Bloctel s'applique aussi aux professionnels
-(quel que soit leur secteur) — le B2B n'exonère pas de l'obligation.
-
-### Règles d'implémentation
-
-```python
-# RÈGLE 1 : Vérification AVANT tout appel, SANS EXCEPTION
-# Aucun numéro ne doit apparaître dans file_appel sans bloctel_ok = TRUE
-
-# RÈGLE 2 : Trois états possibles
-bloctel_ok = True   # ✅ Numéro peut être appelé
-bloctel_ok = False  # ❌ INTERDIT d'appeler — exclure de file_appel
-bloctel_ok = None   # ⏳ Non vérifié — NE PAS appeler non plus
-
-# RÈGLE 3 : La vue file_appel filtre automatiquement
-# WHERE bloctel_ok = TRUE  ← cette condition est non négociable
-
-# RÈGLE 4 : Si API Bloctel indisponible
-# → LOG warning critique + NE PAS appeler les numéros non vérifiés
-# → NE PAS fallback vers "appel quand même"
-
-# RÈGLE 5 : Re-vérification périodique OBLIGATOIRE
-# Un numéro vérifié il y a plus de 30 jours doit être re-vérifié avant
-# tout nouvel appel. bloctel_verifie_le (colonne prospects) doit être
-# recalculé ; si absent ou > 30 jours → bloctel_ok repasse à NULL et le
-# prospect sort de file_appel jusqu'à re-vérification.
-# → Job cron dédié, PAS une vérification "au moment de l'appel" seulement.
-```
-
-### Compte Bloctel professionnel
-
-```
-URL inscription : https://www.bloctel.gouv.fr/
-Délai ouverture : 3 à 5 jours ouvrés
-Format numéros  : E.164 (+33XXXXXXXXX)
-Batch max       : 10 000 numéros par requête
-Fréquence       : Vérification obligatoire tous les 30 jours max
-```
-
-### Implémentation utils/bloctel.py
-
-```python
-async def verifier_batch(numeros: list[str]) -> dict[str, bool]:
-    """
-    Vérifie une liste de numéros contre la liste Bloctel.
-    
-    Returns:
-        dict: {"+33612345678": True, "+33123456789": False, ...}
-        True = peut être appelé
-        False = sur liste noire, INTERDIT d'appeler
-    """
-    # Format E.164 obligatoire
-    # Batch de max 10 000 numéros
-    # Retry sur timeout (max 3 tentatives)
-    # En cas d'erreur API : retourner None pour chaque numéro
-    # Logger le résultat : X vérifiés, Y sur liste noire
-```
-
----
 
 ## RGPD — Traitement des données prospects
 
@@ -180,10 +110,6 @@ Formulation obligatoire :
 ## Checklist légale avant mise en production
 
 ```
-[ ] Compte Bloctel professionnel ouvert et actif
-[ ] Test API Bloctel avec 10 numéros factices
-[ ] Vue file_appel vérifiée : WHERE bloctel_ok = TRUE
-[ ] Job de re-vérification Bloctel (30 jours) déployé et testé
 [ ] Job de purge RGPD automatique (6 mois / 3 ans / 1 an / 3 mois) déployé et testé
 [ ] Mention RGPD documentée et accessible
 [ ] Email DPO configuré

@@ -1,4 +1,4 @@
-# ISSUES.md — 41 issues GitHub · 5 sprints (générique, multi-secteurs)
+# ISSUES.md — 39 issues GitHub · 5 sprints (générique, multi-secteurs)
 
 > Pour créer toutes les issues dans GitHub via Claude Code :
 > `gh issue create --title "..." --body "..." --label "..." --repo 95902/Agent-IA-de-prospection-B2B-`
@@ -339,7 +339,7 @@ Fournir un script unique qui vérifie en une commande que toute la stack (locale
 
 ---
 
-## Sprint 2 — Collecte & Enrichissement (Sem. 3-4) · 9 issues · 17 pts
+## Sprint 2 — Collecte & Enrichissement (Sem. 3-4) · 8 issues · 15 pts
 
 ### #10 · Implémenter sirene_agent.py
 **Labels :** `collecte` `sirene` `sprint-2` `priorité-haute`
@@ -439,48 +439,20 @@ RE_EMAIL = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}'
 **Estimation :** 2 pts
 
 **Objectif**
-Nettoyer et filtrer les prospects avant scoring, en appliquant les exclusions **configurables par client** (jamais codées en dur, CLAUDE.md règle #4) et les contraintes légales (Bloctel).
+Nettoyer et filtrer les prospects avant scoring, en appliquant les exclusions **configurables par client** (jamais codées en dur, CLAUDE.md règle #4).
 
 **Actions :**
 - [ ] Dédup SIRET (marque `doublon = TRUE`, ne supprime pas)
 - [ ] Normalisation E.164
-- [ ] Vérification Bloctel (#15)
 - [ ] Exclusions client (`mots_cles_negatifs`, matching par mot entier, pas sous-chaîne — voir #19)
 - [ ] Filtre effectif hors cible ICP
 
 **Contraintes**
 - Aucune liste de marques/groupes codée en dur — uniquement `criteres_ciblage.mots_cles_negatifs` du client
-- Un numéro `bloctel_ok = NULL` (non vérifié) doit être traité comme non-appelable, jamais comme « appelable par défaut »
 
 **Critères d'acceptance :**
 - [ ] Aucun doublon SIRET dans `file_appel`
 - [ ] Aucun prospect matchant une exclusion ICP de test ne reste `qualifie`
-- [ ] 100% des prospects transmis au scoring ont un statut Bloctel connu
-
----
-
-### #15 · Implémenter utils/bloctel.py ⚠️ LÉGAL OBLIGATOIRE
-**Labels :** `légal` `bloctel` `compliance` `sprint-2` `priorité-haute`
-**Estimation :** 2 pts
-**⚠️ Lire LEGAL.md avant de commencer.**
-
-**Objectif**
-Implémenter la vérification Bloctel, obligation légale non négociable avant tout appel (CLAUDE.md règle #1, amende jusqu'à 75 000€ en cas de manquement).
-
-**Fonction :** `verifier_batch(numeros: list[str]) -> dict[str, bool]`
-- [ ] Format E.164 obligatoire en entrée · batch de max 10 000 numéros par requête
-- [ ] Retry sur timeout (max 3 tentatives)
-- [ ] Si l'API est indisponible : ne jamais fallback vers « appelable par défaut » — logger un warning critique et laisser `bloctel_ok = NULL`
-
-**Persistance**
-- [ ] Met à jour `prospects.bloctel_ok` et `prospects.bloctel_verifie_le`
-- [ ] Insère une ligne d'audit dans `bloctel_verifications` (table déjà présente dans `docker/postgres/init/01_schema.sql`) : `prospect_id`, `telephone`, `resultat`, `reference_bloctel` — trace de preuve en cas de contrôle
-
-**Contraintes**
-- Trois états pour `bloctel_ok` : `TRUE` (appelable), `FALSE` (interdit, exclu de `file_appel`), `NULL` (non vérifié, également exclu)
-- Prérequis de #14 (nettoyage_agent.py), ré-exécuté tous les 30 jours par le job #35
-
-**Critères :** 100 numéros en < 5s · bloctel_ok=False exclu de file_appel · colonne `bloctel_verifie_le` posée pour permettre la re-vérification à 30 jours (voir #35) · chaque vérification laisse une trace dans `bloctel_verifications`
 
 ---
 
@@ -510,9 +482,9 @@ Compléter l'enrichissement email (#13) via Dropcontact quand Tavily/Crawl4AI n'
 **Estimation :** 1 pt
 
 **Objectif**
-Valider bout-en-bout la partie « collecte + enrichissement + nettoyage » du pipeline (#10, #11, #13, #14, #15, #16) sur un volume représentatif, avant d'y brancher le scoring en Sprint 3.
+Valider bout-en-bout la partie « collecte + enrichissement + nettoyage » du pipeline (#10, #11, #13, #14, #16) sur un volume représentatif, avant d'y brancher le scoring en Sprint 3.
 
-**Cibles :** ≥40% tél · ≥20% email · 0 doublon · 0 prospect matchant une exclusion ICP · Bloctel 100% (aucun `bloctel_ok = NULL` en sortie) · < 10 min pour 100 prospects
+**Cibles :** ≥40% tél · ≥20% email · 0 doublon · 0 prospect matchant une exclusion ICP · < 10 min pour 100 prospects
 
 **Marker pytest :** `@pytest.mark.integration` (exclu du CI auto)
 
@@ -717,7 +689,7 @@ Vérifier que le scoring hybride (#19-22) produit des résultats fiables sur des
 
 ---
 
-## Sprint 4 — Production (Sem. 7-8) · 9 issues · 14 pts
+## Sprint 4 — Production (Sem. 7-8) · 8 issues · 13 pts
 
 ### #28 · Déployer stack Docker sur VPS OVH (prod)
 **Labels :** `déploiement` `vps` `production` `sprint-4` `priorité-haute`
@@ -732,7 +704,7 @@ Vérifier que le scoring hybride (#19-22) produit des résultats fiables sur des
 
 **Contraintes**
 - Aucun secret (`.env`) commité — transféré au VPS hors git
-- Les jobs légaux (#35 re-vérification Bloctel, #36 purge RGPD) doivent être déployés en même temps que la stack, pas après
+- Le job légal (#36 purge RGPD) doit être déployé en même temps que la stack, pas après
 
 **Critères d'acceptance :**
 - [ ] Stack accessible et fonctionnelle uniquement depuis le VPS (pas de port DB exposé publiquement)
@@ -778,13 +750,11 @@ Lancer la toute première campagne réelle en production pour le client pilote, 
 **Config :** ICP du client pilote (ex. garages IDF : depts 75,92,93,94, NAF 4520Z,4511Z,4531Z,4532Z) · limit 500 — config lue depuis `criteres_ciblage`, pas en dur dans le script
 
 **Déroulé**
-- [ ] Vérifier que le compte Bloctel professionnel est actif et à jour (#S0-5)
 - [ ] Lancer `python main.py --campagne-id {uuid}` en production (#28)
 - [ ] Suivre l'exécution via LangSmith (#25)
 - [ ] Export CSV des prospects qualifiés en fin de run
 
 **Contraintes**
-- Aucun appel ne doit être passé sur un numéro dont `bloctel_ok` n'est pas strictement `TRUE`
 - Si les cibles ne sont pas atteintes, documenter l'écart avant de relancer
 
 **Objectifs :** 200+ tél (40%) · 100+ emails (20%) · 150+ qualifiés · export CSV livré à l'équipe commerciale
@@ -865,31 +835,6 @@ Clore le MVP (9 semaines) en comparant les résultats réels aux cibles définie
 
 ---
 
-### #35 · Job de re-vérification Bloctel (30 jours) ⚠️ LÉGAL OBLIGATOIRE
-**Labels :** `légal` `bloctel` `compliance` `automatisation` `sprint-4` `priorité-haute`
-**Estimation :** 1 pt
-**⚠️ Lire LEGAL.md → Règle 5.**
-
-**Objectif**
-Automatiser la re-vérification Bloctel périodique : un numéro vérifié il y a plus de 30 jours ne doit plus être appelable sans re-vérification (obligation légale, amende jusqu'à 75 000€). Ce point n'était couvert par aucune tâche dans le plan initial — corrigé ici suite à l'audit de conformité.
-
-**Actions :**
-- [ ] Script `scripts/reverifier_bloctel.py` : sélectionne les prospects avec `bloctel_verifie_le` absent ou > 30 jours et appelables (statut qualifié/nouveau)
-- [ ] Réutilise `verifier_batch` (#15) et journalise chaque re-vérification dans `bloctel_verifications` (table d'audit déjà présente dans `docker/postgres/init/01_schema.sql`)
-- [ ] Repasse `bloctel_ok = NULL` tant que non re-vérifié (donc exclu de `file_appel` — la vue filtre déjà sur `bloctel_verifie_le > NOW() - INTERVAL '30 days'`)
-- [ ] Cron quotidien (`crontab` ou `make cron-bloctel`)
-- [ ] Log du nombre de prospects re-vérifiés / repassés en attente
-
-**Contraintes**
-- Ce job doit être déployé en même temps que la stack de production (#28), pas après — obligation légale dès la mise en service
-
-**Critères d'acceptance :**
-- [ ] Un prospect avec `bloctel_verifie_le` > 30 jours disparaît de `file_appel` tant qu'il n'est pas re-vérifié
-- [ ] Le job tourne sans intervention manuelle
-- [ ] Chaque re-vérification laisse une trace dans `bloctel_verifications`
-
----
-
 ### #36 · Job de purge RGPD automatique ⚠️ LÉGAL OBLIGATOIRE
 **Labels :** `légal` `rgpd` `compliance` `automatisation` `sprint-4` `priorité-haute`
 **Estimation :** 1 pt
@@ -917,10 +862,12 @@ Automatiser l'application de la politique de rétention RGPD (invalides 6 mois, 
 
 ## Commande Claude Code pour créer toutes les issues
 
-> ⚠️ Historique : les 41 issues et tous les labels ci-dessous existent déjà
+> ⚠️ Historique : les issues et tous les labels ci-dessous existent déjà
 > sur GitHub (créés via `gh`). Cette liste ne reflète que l'état initial —
-> elle omet `compliance`, `rgpd` et `embeddings`, ajoutés depuis. Ne pas
-> relancer ce bloc tel quel sur un repo déjà initialisé.
+> elle omet `compliance`, `rgpd` et `embeddings`, ajoutés depuis, et inclut
+> encore le label `bloctel` (obsolète depuis le retrait de cette contrainte
+> du produit, conservé sur les anciennes issues fermées). Ne pas relancer ce
+> bloc tel quel sur un repo déjà initialisé.
 
 ```bash
 # Depuis le terminal, avec gh CLI authentifié :
