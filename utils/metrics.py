@@ -89,8 +89,8 @@ def rapport(couverture: dict, sources: Iterable[MetriquesSource]) -> str:
     n = couverture["n"]
     lignes = [
         f"=== Métriques de run — {n} prospects ===",
-        f"  email     : {couverture['email']:>4} ({couverture['email_pct']:.0f}%)  cible PRD ≥ 20%",
-        f"  téléphone : {couverture['telephone']:>4} ({couverture['telephone_pct']:.0f}%)  cible PRD ≥ 40%",
+        f"  email     : {couverture['email']:>4} ({couverture['email_pct']:.0f}%)  cible PRD ≥ 20% — PRIORITAIRE (D6)",
+        f"  téléphone : {couverture['telephone']:>4} ({couverture['telephone_pct']:.0f}%)  bonus (D6) — indicatif ~40%",
         f"  site web  : {couverture['site_web']:>4} ({couverture['site_web_pct']:.0f}%)",
         f"  doublons  : {couverture['doublons']:>4}",
         f"  contactables (opposition vérifiée) : {couverture['contactables']:>4}",
