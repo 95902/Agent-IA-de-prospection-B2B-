@@ -6,10 +6,12 @@ Ce node les enrichit via une **cascade de résolveurs** de sources légales
 
     Tavily (recherche + contenu)  →  Crawl4AI (rendu JS du site)  →  DuckDuckGo
 
-Produit orienté **email-first** (l'appel = Phase 2). La politique email de #10
-est conservée telle quelle (`contact@`/`info@` restent mis à None sur
-`Prospect.email`), MAIS **tous** les contacts bruts trouvés sont stockés dans
-`raw_data['enrichissement']` — terrain de test pour un futur réalignement RGPD.
+Produit orienté **email-first** (l'appel = Phase 2). Depuis #65 (décision D1),
+les boîtes génériques COMMERCIALES (`contact@`, `info@`, `reservation@`…) sont
+acceptées sur `Prospect.email` ; seules les boîtes RGPD (`dpo@`, `rgpd@`…) et
+automatiques (`noreply@`) restent écartées (`models/prospect.py`). Dans tous les
+cas, **tous** les contacts bruts trouvés sont aussi stockés dans
+`raw_data['enrichissement']`.
 
 ⚠️ Précision : un email/téléphone glané au hasard dans des résultats de recherche
 appartient souvent à une AUTRE entreprise. On applique donc un **filtre par
