@@ -24,7 +24,7 @@ Déployer la stack complète (#6) sur le VPS CPU OVH en configuration production
 
 ## Contraintes
 - Aucun secret (`.env`) commité — transféré au VPS hors git (ex. scp sécurisé ou gestionnaire de secrets)
-- Les jobs légaux (#40 re-vérification Bloctel, #41 purge RGPD) doivent être déployés en même temps que la stack, pas après (obligation légale dès la mise en prod)
+- Le job légal (#41 purge RGPD) doit être déployé en même temps que la stack, pas après (obligation légale dès la mise en prod)
 
 ## Critères d'acceptance
 - [ ] Stack accessible et fonctionnelle uniquement depuis le VPS (pas de port DB exposé publiquement, vérifié par un scan externe)
