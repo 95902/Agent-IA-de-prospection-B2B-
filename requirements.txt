@@ -19,6 +19,13 @@ beautifulsoup4>=4.12          # extraction mailto/emails du HTML
 ddgs>=6.0                     # DuckDuckGo (fallback recherche, sans clé)
 # crawl4ai : volontairement ABSENT — voir requirements-optional.txt
 
+# Scoring LLM (issue #25) — API Claude UNIQUEMENT (règle #6), AsyncAnthropic (règle #8).
+# Sortie structurée via output_config.format (json_schema) — nécessite un SDK récent.
+# #25 figera la version exacte quand il consomme réellement l'API ; pip résout au dernier.
+anthropic>=0.40,<1.0
+# Rendu des prompts de scoring depuis l'ICP client (issue #25), jamais figé (règle #3).
+jinja2>=3.1,<4.0
+
 # --- Dev (tests) ---
 pytest>=8.0,<9.0
 pytest-asyncio>=0.23,<0.25

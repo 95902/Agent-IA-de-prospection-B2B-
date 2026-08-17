@@ -37,8 +37,14 @@ class Settings(BaseSettings):
     ollama_embed_model: str = "nomic-embed-text"
 
     # ---------- Claude (scoring — jamais codé en dur dans les prompts, règle #6) ----------
+    # Défaut Haiku 4.5 : classification bornée bon marché (cible < 0,003 €/prospect).
+    # Configurable (règle #6) ; l'audit qualité #32 ré-arbitre Haiku vs Sonnet sur
+    # données réelles. ⚠️ Le code de #25 doit rester agnostique du modèle : Haiku 4.5
+    # REFUSE output_config.effort mais ACCEPTE temperature ; Sonnet 5 fait l'inverse
+    # (effort OK, temperature/top_p → 400). Ne fixer aucun des deux → défauts + sortie
+    # structurée (output_config.format), valide sur les deux.
     anthropic_api_key: str = ""
-    claude_scoring_model: str = "claude-sonnet-5"
+    claude_scoring_model: str = "claude-haiku-4-5"
 
     # ---------- APIs collecte ----------
     insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
