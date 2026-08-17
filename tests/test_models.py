@@ -51,17 +51,48 @@ def test_email_valide_conserve():
 @pytest.mark.parametrize(
     "raw",
     [
-        "notanemail",            # pas de @
-        "a@b",                   # domaine sans point
-        "contact@garage.fr",     # préfixe blacklisté
-        "info@x.fr",             # préfixe blacklisté
-        "x@pagesjaunes.fr",      # domaine blacklisté
-        "x@laposte.net",         # domaine blacklisté
-        "no-reply@noreply.io",   # 'noreply.' blacklisté
+        "contact@garage.fr",       # générique commerciale
+        "info@garage.fr",          # générique commerciale
+        "reservation@hotel.fr",    # générique commerciale
+        "bonjour@studio.fr",       # générique commerciale
+        "reception@hotel.fr",      # générique commerciale
+    ],
+)
+def test_email_generique_commerciale_conservee(raw):
+    # Décision D1 / #65 : les boîtes génériques commerciales sont valides.
+    assert _prospect(email=raw).email == raw
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "notanemail",                    # pas de @
+        "a@b",                           # domaine sans point
+        "x@pagesjaunes.fr",              # domaine blacklisté
+        "x@laposte.net",                 # domaine blacklisté
+        "no-reply@noreply.io",           # domaine 'noreply.'
+        "noreply@garage.fr",             # rôle automatique (domaine propre)
+        "dpo@garage.fr",                 # boîte RGPD
+        "rgpd@garage.fr",                # boîte RGPD
+        "donnees.personnelles@x.fr",     # boîte RGPD (partie locale composée)
+        "cnil@x.fr",                     # boîte RGPD
     ],
 )
 def test_email_invalide_ou_blackliste_vers_none(raw):
     assert _prospect(email=raw).email is None
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "adpont@garage.fr",          # 'adpont' contient la sous-chaîne 'dpo'
+        "prrgpdupuis@cabinet.fr",    # contient 'rgpd' en sous-chaîne
+    ],
+)
+def test_email_role_pas_de_faux_positif_par_sous_chaine(raw):
+    # La comparaison se fait par token (partie locale scindée sur . - _ +),
+    # jamais par sous-chaîne : un rôle noyé dans un mot ne déclenche rien.
+    assert _prospect(email=raw).email == raw
 
 
 # --- SIRET : Luhn strict ----------------------------------------------------

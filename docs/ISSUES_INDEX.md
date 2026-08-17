@@ -3,7 +3,7 @@
 Les 41 issues du repo `95902/Agent-IA-de-prospection-B2B-` rapatriées 
 depuis GitHub, organisées par sprint dans `docs/issues/<sprint>/`.
 
-Total : **41 issues** (récupérées le 2026-07-31).
+Total : **39 issues** (récupérées le 2026-07-31 ; #20 et #40, dédiées à Bloctel, ont été supprimées suite au retrait de cette contrainte du produit).
 
 ## Sprint 0 — Conception & Design (5)
 
@@ -25,14 +25,13 @@ Total : **41 issues** (récupérées le 2026-07-31).
 - 🟢 [#13](./issues/sprint-1/13-tests-unitaires-modeles-pydantic-telephone-email-s.md) — Tests unitaires modèles Pydantic (téléphone, email, SIRET)
 - 🟢 [#14](./issues/sprint-1/14-script-smoke-test-py-verifier-que-la-stack-demarre.md) — Script smoke_test.py — vérifier que la stack démarre
 
-## Sprint 2 — Collecte & Enrichissement (9)
+## Sprint 2 — Collecte & Enrichissement (8)
 
 - 🟢 [#15](./issues/sprint-2/15-implementer-sirene-agent-py-api-insee-pagination.md) — Implémenter sirene_agent.py — API INSEE + pagination
 - 🟢 [#16](./issues/sprint-2/16-node-init-campagne-charger-criteres-depuis-bdd.md) — Node init_campagne — charger critères depuis BDD
 - 🟢 [#17](./issues/sprint-2/17-tests-integration-sirene-50-prospects-reels.md) — Tests intégration Sirene (50 prospects réels)
 - 🟢 [#18](./issues/sprint-2/18-implementer-enrichissement-agent-py-tavily-crawl4a.md) — Implémenter enrichissement_agent.py (Tavily+Crawl4AI+DDG)
 - 🟢 [#19](./issues/sprint-2/19-implementer-nettoyage-agent-py-dedup-filtres-group.md) — Implémenter nettoyage_agent.py (dédup + filtres groupes)
-- 🟢 [#20](./issues/sprint-2/20-implementer-utils-bloctel-py-legal-obligatoire.md) — Implémenter utils/bloctel.py ⚠️ LÉGAL OBLIGATOIRE
 - 🟢 [#21](./issues/sprint-2/21-integrer-dropcontact-enrichissement-emails-b2b.md) — Intégrer Dropcontact — enrichissement emails B2B
 - 🟢 [#22](./issues/sprint-2/22-test-e2e-pipeline-collecte-100-prospects-icp-pilot.md) — Test E2E pipeline collecte (100 prospects, ICP pilote)
 - 🟢 [#23](./issues/sprint-2/23-metriques-par-source-taux-succes-couts.md) — Métriques par source (taux succès + coûts)
@@ -49,7 +48,7 @@ Total : **41 issues** (récupérées le 2026-07-31).
 - 🟢 [#31](./issues/sprint-3/31-tests-unitaires-scoring-20-cas-mock-claude.md) — Tests unitaires scoring — 20 cas (mock Claude)
 - 🟢 [#32](./issues/sprint-3/32-audit-qualite-scores-100-prospects-reels.md) — Audit qualité scores — 100 prospects réels
 
-## Sprint 4 — Production (9)
+## Sprint 4 — Production (8)
 
 - 🟢 [#33](./issues/sprint-4/33-deployer-stack-docker-sur-vps-ovh-prod.md) — Déployer stack Docker sur VPS OVH (prod)
 - 🟢 [#34](./issues/sprint-4/34-configurer-cron-campagnes-automatiques-lundi-6h.md) — Configurer cron campagnes automatiques (lundi 6h)
@@ -58,5 +57,4 @@ Total : **41 issues** (récupérées le 2026-07-31).
 - 🟢 [#37](./issues/sprint-4/37-installer-metabase-sur-vps-dashboard-kpis.md) — Installer Metabase sur VPS (dashboard KPIs)
 - 🟢 [#38](./issues/sprint-4/38-rapport-hebdomadaire-automatique-par-email-brevo.md) — Rapport hebdomadaire automatique par email (Brevo)
 - 🟢 [#39](./issues/sprint-4/39-retrospective-mvp-plan-phase-2.md) — Rétrospective MVP + plan Phase 2
-- 🟢 [#40](./issues/sprint-4/40-job-de-re-verification-bloctel-30-jours-legal-obli.md) — Job de re-vérification Bloctel (30 jours) ⚠️ LÉGAL OBLIGATOIRE
 - 🟢 [#41](./issues/sprint-4/41-job-de-purge-rgpd-automatique-legal-obligatoire.md) — Job de purge RGPD automatique ⚠️ LÉGAL OBLIGATOIRE

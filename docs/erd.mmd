@@ -14,7 +14,6 @@ erDiagram
     
     PROSPECTS ||--o{ SCORES : "obtient"
     %% PROSPECTS ||--o{ APPELS : "recoit"
-    %% PROSPECTS ||--o{ BLOCTEL_VERIFICATIONS : "subit"
     
     CLIENTS {
         uuid id PK
@@ -121,8 +120,6 @@ erDiagram
         integer score_llm
         real score_embedding
         text statut
-        boolean bloctel_ok
-        timestamptz bloctel_verifie_le
         boolean doublon
         uuid qdrant_point_id
         text notes
@@ -156,13 +153,4 @@ erDiagram
     %%     timestamptz rdv_datetime
     %%     text notes_commercial
     %%     jsonb metadata
-    %% }
-
-    %% BLOCTEL_VERIFICATIONS {
-    %%     uuid id PK
-    %%     timestamptz verifie_le
-    %%     uuid prospect_id FK
-    %%     text telephone
-    %%     boolean resultat
-    %%     text reference_bloctel
     %% }

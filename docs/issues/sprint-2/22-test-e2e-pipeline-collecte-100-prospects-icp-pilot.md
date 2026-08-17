@@ -12,7 +12,7 @@
 **Labels :** tests, intégration, sprint-2
 
 ## Objectif
-Valider bout-en-bout la partie « collecte + enrichissement + nettoyage » du pipeline (nodes #15, #16, #18, #19, #20, #21) sur un volume représentatif, avant d'y brancher le scoring en Sprint 3.
+Valider bout-en-bout la partie « collecte + enrichissement + nettoyage » du pipeline (nodes #15, #16, #18, #19, #21) sur un volume représentatif, avant d'y brancher le scoring en Sprint 3.
 
 ## Portée
 100 prospects réels, avec l'ICP du client pilote (départements + codes NAF de test).
@@ -22,11 +22,10 @@ Valider bout-en-bout la partie « collecte + enrichissement + nettoyage » du pi
 - [ ] ≥ 20% des prospects ont un email (cible PRD)
 - [ ] 0 doublon SIRET dans le résultat final
 - [ ] 0 prospect matchant une exclusion ICP (`mots_cles_negatifs`) parmi les prospects `qualifie`
-- [ ] Bloctel vérifié à 100% (aucun `bloctel_ok = NULL` en sortie de pipeline)
 - [ ] Pipeline complet en moins de 10 minutes pour 100 prospects
 
 ## Contraintes
-- Marker `@pytest.mark.integration` — appelle de vraies APIs externes (Sirene, Tavily, Bloctel, Dropcontact), exclu du CI automatique
+- Marker `@pytest.mark.integration` — appelle de vraies APIs externes (Sirene, Tavily, Dropcontact), exclu du CI automatique
 
 ## Critères d'acceptance
 - [ ] Toutes les cibles ci-dessus sont vérifiées par des assertions automatiques, pas seulement lues manuellement
