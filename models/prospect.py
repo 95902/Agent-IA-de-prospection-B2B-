@@ -20,11 +20,28 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from stdnum.fr import siren as _stdnum_siren
 from stdnum.fr import siret as _stdnum_siret
 
-# Emails à écarter (score email = 0) — cf. docs/SCORING.md. Mélange de domaines
-# et de préfixes de partie locale : matching par sous-chaîne, insensible casse.
+# Domaines/hôtes à écarter (score email = 0) : jamais le domaine propre d'une
+# entreprise (annuaires, opérateurs, boîtes automatiques). Matching par
+# sous-chaîne sur le DOMAINE uniquement, insensible à la casse. Cf. docs/SCORING.md.
 EMAIL_BLACKLIST_DOMAINS = (
-    "pagesjaunes.fr", "laposte.net", "noreply.", "contact@", "info@", "mairie.",
+    "pagesjaunes.fr", "laposte.net", "noreply.", "mairie.",
 )
+
+# Rôles de boîte à écarter même sur le domaine propre de l'entreprise, comparés
+# à la PARTIE LOCALE tokenisée (séparateurs . - _ +) — jamais par sous-chaîne,
+# pour éviter les faux positifs (« dupont » contient « dpo »). Deux familles :
+# - automatiques (noreply/no-reply) : personne ne les lit ;
+# - RGPD/juridiques (dpo, rgpd, cnil, données personnelles…) : prospecter le DPO
+#   d'une société est le pire destinataire possible — mesuré en réel (issue #65).
+# À l'inverse, les génériques COMMERCIALES (contact@, info@, reservation@,
+# bonjour@, reception@…) sont désormais CONSERVÉES — décision équipe D1 / #65 :
+# elles représentent ~30 % des emails trouvés par la chaîne gratuite.
+EMAIL_BLACKLIST_ROLES = frozenset({
+    "noreply", "reply",
+    "dpo", "rgpd", "cnil", "privacy", "personnelles",
+})
+
+_LOCALPART_SEP = re.compile(r"[.\-_+]")
 
 # Statuts autorisés (CHECK de la table prospects).
 STATUTS_PROSPECT = (
@@ -57,12 +74,21 @@ def _normalize_phone(raw: str) -> str | None:
 
 
 def _clean_email(raw: str) -> str | None:
-    """Email normalisé, ou None si syntaxe invalide ou domaine blacklisté."""
+    """Email normalisé, ou None si : syntaxe invalide, domaine hors-entreprise
+    (annuaires/opérateurs/auto), ou boîte de rôle à écarter (automatique / RGPD).
+
+    Les génériques commerciales (contact@, info@, reservation@…) sont CONSERVÉES
+    — décision équipe D1 / #65. Seules les boîtes RGPD (dpo@, rgpd@, cnil@,
+    donnees.personnelles@) et automatiques (noreply@) sont écartées côté rôle."""
     try:
         normalized = validate_email(raw, check_deliverability=False).normalized
     except EmailNotValidError:
         return None
-    if any(token in normalized.lower() for token in EMAIL_BLACKLIST_DOMAINS):
+    local, _, domain = normalized.lower().partition("@")
+    if any(token in domain for token in EMAIL_BLACKLIST_DOMAINS):
+        return None
+    tokens = {t for t in _LOCALPART_SEP.split(local) if t}
+    if tokens & EMAIL_BLACKLIST_ROLES:
         return None
     return normalized
 

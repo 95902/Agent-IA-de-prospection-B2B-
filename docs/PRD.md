@@ -43,7 +43,6 @@ Un commercial humain appelle 30 à 50 prospects par jour, sans tri de qualité. 
 ### IN SCOPE
 - Collecte Sirene INSEE (codes NAF **configurables par client/campagne**, aucun code sectoriel figé)
 - Enrichissement contacts (téléphone + email) via Tavily + Crawl4AI
-- Vérification Bloctel (légalement obligatoire), avec re-vérification périodique
 - Scoring hybride 3 couches (règles génériques + Claude + embeddings), calibré sur l'ICP du client, pas sur un secteur
 - File d'appel PostgreSQL (vue `file_appel`)
 - Sync Airtable (CRM équipe commerciale)
@@ -74,7 +73,6 @@ Un commercial humain appelle 30 à 50 prospects par jour, sans tri de qualité. 
 
 - **Performance** : pipeline 500 prospects en moins de 45 minutes sur CPU OVH
 - **Fiabilité** : fallback si Claude API down (scoring règles uniquement)
-- **Légalité** : Bloctel vérifié sur 100% des numéros avant appel, re-vérifié tous les 30 jours max
 - **RGPD** : base légale "intérêt légitime B2B" documentée, purge automatique selon la politique de rétention, Dropcontact RGPD EU
 - **Coût** : moins de 90€/mois par client actif en phase MVP
 - **Scalabilité** : PostgreSQL + Qdrant supportent jusqu'à 100k prospects par client sans migration
@@ -95,8 +93,6 @@ Phase 4 (mois 7+)        : SaaS complet + facturation + onboarding multi-clients
 |---|---|---|---|
 | Quota Tavily épuisé | Moyenne | Fort | Fallback DuckDuckGo natif |
 | Claude API down | Faible | Moyen | Fallback scoring règles uniquement |
-| Bloctel API indisponible | Faible | Fort | Log warning + blocage appels |
 | Taux enrichissement < 40% | Moyenne | Moyen | Ajouter Pappers API Phase 2 |
 | VPS CPU insuffisant | Faible | Fort | Upgrade OVH ou migration Hetzner |
-| Compte Bloctel pro refusé | Faible | Critique | Anticiper dès Sprint 0 (3-5 jours délai) |
 | ICP mal calibré par un client (barème générique inadapté à son secteur) | Moyenne | Moyen | Audit qualité scores (issue #27) + ajustement des poids par campagne |

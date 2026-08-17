@@ -29,7 +29,6 @@
 │  Claude API (scoring LLM — modèle configurable, config/settings.py) │
 │  Sirene INSEE (collecte)                   │
 │  Tavily (enrichissement)                   │
-│  Bloctel (validation légale)               │
 │  Dropcontact (emails B2B)                  │
 └─────────────────────────────────────────────┘
 ```
@@ -55,7 +54,7 @@ Agent-IA-de-prospection-B2B-/
 ├── agents/
 │   ├── sirene_agent.py         # Node LangChain : collecte INSEE
 │   ├── enrichissement_agent.py # Node : Tavily + Crawl4AI + DDG
-│   ├── nettoyage_agent.py      # Node : dédup + Bloctel + filtres
+│   ├── nettoyage_agent.py      # Node : dédup + filtres
 │   └── scoring_agent.py        # Node : 3 couches scoring hybride
 ├── graph/
 │   ├── workflow.py             # Graphe LangChain complet (6 nodes)
@@ -66,7 +65,6 @@ Agent-IA-de-prospection-B2B-/
 ├── utils/
 │   ├── db.py                   # asyncpg pool + AsyncQdrantClient
 │   ├── embeddings.py           # Ollama nomic-embed-text v2
-│   ├── bloctel.py              # Vérif. liste rouge (LÉGAL)
 │   ├── dropcontact.py          # Enrichissement emails
 │   ├── airtable_sync.py        # Sync CRM
 │   └── logger.py               # Loguru + LangSmith config
@@ -144,7 +142,6 @@ prospects (
   effectif, date_creation, chiffre_affaire,
   score_final INT [0-100], score_regles INT, score_llm INT, score_embedding FLOAT,
   statut CHECK ('nouveau','qualifie','en_attente_appel','appele','rdv','refus','absent','invalide'),
-  bloctel_ok BOOL, bloctel_verifie_le TIMESTAMPTZ,  -- re-vérification à 30j, voir LEGAL.md Règle 5 / issue #35
   doublon BOOL, qdrant_point_id UUID,
   notes, raw_data JSONB
 )
@@ -176,7 +173,6 @@ SELECT p.id, p.nom_entreprise, p.nom_dirigeant,
 FROM prospects p
 JOIN campagnes c ON c.id = p.campagne_id
 WHERE p.statut = 'qualifie'
-  AND p.bloctel_ok = TRUE
   AND p.telephone IS NOT NULL
   AND p.doublon = FALSE
 ORDER BY p.score_final DESC;
@@ -189,8 +185,6 @@ CREATE INDEX idx_prospects_statut   ON prospects(statut);
 CREATE INDEX idx_prospects_score    ON prospects(score_final DESC);
 CREATE INDEX idx_prospects_dept     ON prospects(departement);
 CREATE INDEX idx_prospects_naf      ON prospects(code_naf);
-CREATE INDEX idx_prospects_bloctel  ON prospects(bloctel_ok) WHERE bloctel_ok = TRUE;
-CREATE INDEX idx_prospects_bloctel_verif ON prospects(bloctel_verifie_le);  -- utilisé par le job de re-vérification (#35)
 CREATE INDEX idx_prospects_nom_trgm ON prospects USING gin(nom_entreprise gin_trgm_ops);
 ```
 
@@ -252,9 +246,7 @@ LANGCHAIN_PROJECT=prospection-b2b
 # APIs collecte
 INSEE_API_KEY=...              # portail-api.insee.fr — header X-INSEE-Api-Key-Integration, base api-sirene/3.11, 30 req/min
 TAVILY_API_KEY=tvly-...        # 1000 req/mois gratuit
-PAPPERS_API_KEY=...            # opposition commerciale R123-232 (1 crédit/entreprise)
-DROPCONTACT_API_KEY=...        # ~79€/mois selon volume — dernier recours (chaîne gratuite d'abord)
-# BLOCTEL supprimé (loi n° 2025-594, 11 août 2026) — voir docs/LEGAL.md
+DROPCONTACT_API_KEY=...        # 24€/mois
 
 # Paramètres campagne — valeurs d'EXEMPLE uniquement.
 # En production, ces critères viennent de la table criteres_ciblage du

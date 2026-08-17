@@ -71,15 +71,29 @@ async def test_valid_contact_set_on_prospect(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generic_email_kept_in_rawdata_but_nulled(monkeypatch):
-    # contact@ : politique #10 -> None sur .email, MAIS gardé dans raw_data.
+async def test_generic_commercial_email_kept(monkeypatch):
+    # #65 / D1 : contact@ (générique commerciale) est désormais accepté sur
+    # .email, et toujours conservé dans raw_data.
     monkeypatch.setattr(ea, "RESOLVERS", [_fixed_resolver(
         Contacts(emails=["contact@garage.fr"], phones=[], source="tavily")
     )])
     p = _p()
     await ea._enrich_prospect(p, None, ea.get_settings())
-    assert p.email is None
+    assert p.email == "contact@garage.fr"
     assert "contact@garage.fr" in p.raw_data["enrichissement"]["emails"]
+
+
+@pytest.mark.asyncio
+async def test_rgpd_email_nulled_but_kept_in_rawdata(monkeypatch):
+    # Une boîte RGPD (dpo@) reste mise à None sur .email — pire destinataire —
+    # mais est conservée dans raw_data pour traçabilité.
+    monkeypatch.setattr(ea, "RESOLVERS", [_fixed_resolver(
+        Contacts(emails=["dpo@garage.fr"], phones=[], source="tavily")
+    )])
+    p = _p()
+    await ea._enrich_prospect(p, None, ea.get_settings())
+    assert p.email is None
+    assert "dpo@garage.fr" in p.raw_data["enrichissement"]["emails"]
 
 
 # --- Cascade ----------------------------------------------------------------

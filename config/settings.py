@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     # ⚠️ Dépend de la densité urbaine — à réévaluer hors grande ville.
     domiciliation_seuil: int = 300
 
+    # ---------- Budget crédits opposition commerciale (#19/#74) ----------
+    # Plafond de SIREN interrogés chez Pappers pour l'opposition commerciale
+    # (1 crédit chacun). Knob de COÛT, pas une valeur métier (règle #3). None =
+    # vérifier tous les survivants du nettoyage (peut coûter cher sur une grosse
+    # campagne — poser un budget en prod, cf. suivi de coûts #23).
+    opposition_budget_credits: int | None = None
+
     @property
     def postgres_dsn(self) -> str:
         return (

@@ -23,8 +23,8 @@ Pièges connus (drift docs ↔ réalité — vérifier avant de coder) :
 - **Numérotation des issues** : `docs/ISSUES.md` numérote le Sprint 0 en `#S0-x` ;
   sur GitHub ce sont les issues #1–5, donc **tout est décalé de +5**. Ex. : « #5
   Pydantic » dans la doc = issue GitHub **#10**. Toujours mapper avant de citer.
-- **11 tables, pas 8** : le schéma ajoute `bloctel_verifications`,
-  `oppositions_rgpd`, `purge_rgpd_log` aux 8 documentées.
+- **10 tables, pas 8** : le schéma ajoute `oppositions_rgpd`,
+  `purge_rgpd_log` aux 8 documentées.
 - **INSEE** : nouveau portail `api-sirene/3.11` + header
   `X-INSEE-Api-Key-Integration` (et non l'ancien `entreprises/sirene/V3.11` + OAuth2).
 - **Fins de ligne** : `.gitattributes` force LF sur `*.sh`. Ne pas réintroduire de
@@ -53,20 +53,19 @@ Durée   : 9 semaines MVP
 | L'architecture globale, la BDD, Docker, les APIs | `docs/ARCHITECTURE.md` |
 | Le scoring hybride, les prompts Claude (générés dynamiquement depuis l'ICP client), les embeddings | `docs/SCORING.md` |
 | Une issue spécifique (Sprint 0 à Sprint 4, 41 issues au total sur GitHub) | `docs/ISSUES.md` |
-| Les règles légales (opposition commerciale R123-232, RGPD, loi 2025-594) | `docs/LEGAL.md` |
+| Les règles légales (RGPD) | `docs/LEGAL.md` |
 | Le produit, les user stories, les KPIs | `docs/PRD.md` |
 
 ## Règles absolues — ne jamais ignorer
 
-1. **Opposition commerciale OBLIGATOIRE** (art. R123-232 c. com.) avant tout enrichissement tiers ou file de contact — `utils/opposition_commerciale.py::peut_etre_contacte()`, **fermé par défaut**. ⚠️ **Bloctel a été supprimé** par la loi n° 2025-594 au **11 août 2026** (opt-in B2C, intérêt légitime B2B inchangé) : ne plus fonder aucune logique d'appel dessus. L'appel = Phase 2 (V1 email-first). Lire `docs/LEGAL.md`.
-2. **Sources légales uniquement** : Sirene INSEE, Tavily, Pappers. Zéro scraping illégal.
-3. **Aucun ICP codé en dur** : codes NAF, tranche d'effectif, ancienneté, zone géographique, mots-clés positifs/négatifs viennent tous de `criteres_ciblage` / `icp_profiles` en base, jamais de constantes Python. Un client = un ICP = une configuration.
-4. **Exclusions configurables par client** (`criteres_ciblage.mots_cles_negatifs`) — jamais de liste de marques/groupes codée en dur. Un prospect qui matche une exclusion → score = 0 automatiquement.
-5. **Embeddings locaux sur CPU** : Ollama + `nomic-embed-text` (tag Ollama = v1.5, ~274 MB au téléchargement / 137M paramètres, 768 dims). Pas d'API OpenAI pour ça. Modèle configurable via `OLLAMA_EMBED_MODEL`.
-6. **LLM scorer en cloud** : Claude API uniquement (CPU OVH trop lent pour inférence locale). Voir `docs/SCORING.md` pour le choix de modèle et le prompt caching.
-7. **Pydantic v2 partout** : tous les modèles de données passent par Pydantic avec validators.
-8. **Async partout** : asyncpg pour Postgres, AsyncQdrantClient pour Qdrant, httpx pour HTTP.
-9. **RGPD** : purge automatique des données selon la politique de rétention (voir `docs/LEGAL.md`) — job récurrent, pas une tâche manuelle.
+1. **Sources légales uniquement** : Sirene INSEE, Tavily, Pappers. Zéro scraping illégal.
+2. **Aucun ICP codé en dur** : codes NAF, tranche d'effectif, ancienneté, zone géographique, mots-clés positifs/négatifs viennent tous de `criteres_ciblage` / `icp_profiles` en base, jamais de constantes Python. Un client = un ICP = une configuration.
+3. **Exclusions configurables par client** (`criteres_ciblage.mots_cles_negatifs`) — jamais de liste de marques/groupes codée en dur. Un prospect qui matche une exclusion → score = 0 automatiquement.
+4. **Embeddings locaux sur CPU** : Ollama + `nomic-embed-text` (tag Ollama = v1.5, ~274 MB au téléchargement / 137M paramètres, 768 dims). Pas d'API OpenAI pour ça. Modèle configurable via `OLLAMA_EMBED_MODEL`.
+5. **LLM scorer en cloud** : Claude API uniquement (CPU OVH trop lent pour inférence locale). Voir `docs/SCORING.md` pour le choix de modèle et le prompt caching.
+6. **Pydantic v2 partout** : tous les modèles de données passent par Pydantic avec validators.
+7. **Async partout** : asyncpg pour Postgres, AsyncQdrantClient pour Qdrant, httpx pour HTTP.
+8. **RGPD** : purge automatique des données selon la politique de rétention (voir `docs/LEGAL.md`) — job récurrent, pas une tâche manuelle.
 
 ## Stack en 30 secondes
 
@@ -74,7 +73,7 @@ Durée   : 9 semaines MVP
 Python 3.12 + LangChain + Pydantic v2
 PostgreSQL 16 (Docker) + Qdrant (Docker) + Ollama CPU (Docker)
 Claude API (scoring LLM — modèle configuré dans config/settings.py, jamais codé en dur dans les prompts)
-Sirene INSEE + Tavily + Crawl4AI + Bloctel + Dropcontact
+Sirene INSEE + Tavily + Crawl4AI + Dropcontact
 VPS CPU OVH — tout self-hosted
 ```
 
@@ -88,10 +87,8 @@ python main.py --client-id <uuid> --depts 75,92 --limit 50 --dry-run
 pytest tests/ -v
 ```
 
-## Coût mensuel MVP (par client actif) : ~125-140€
+## Coût mensuel MVP (par client actif) : ~65-85€
 
-Dropcontact ~79€ + Tavily 20€ + Claude API ~10€ + VPS OVH ~15-30€
-(Bloctel supprimé — loi 2025-594. La chaîne A OSM/Pappers est **gratuite** et
-réduit ce coût quand elle suffit : viser Dropcontact en dernier recours.)
+Dropcontact 24€ + Tavily 20€ + Claude API ~10€ + VPS OVH ~15-30€
 
 @agents.md

@@ -3,6 +3,7 @@
 > ⚠️ Ce fichier est CRITIQUE. Ne jamais bypasser ces règles.
 > Ces obligations s'appliquent à **tout client**, quel que soit son secteur cible.
 
+
 ## ⚠️ MAJ 11 août 2026 — fin de Bloctel (loi n° 2025-594)
 
 La **loi n° 2025-594 du 30 juin 2025** (art. 13, réécrivant l'art. L223-1 du
@@ -49,6 +50,7 @@ prospection B2B.**
   non-exclusion — en cas de contrôle.
 
 ---
+
 
 ## RGPD — Traitement des données prospects
 
@@ -166,8 +168,6 @@ Formulation obligatoire :
 ## Checklist légale avant mise en production
 
 ```
-[ ] Filtre opposition commerciale (R123-232) actif AVANT tout enrichissement
-    tiers et toute file de contact — peut_etre_contacte(), fermé par défaut
 [ ] Job de purge RGPD automatique (6 mois / 3 ans / 1 an / 3 mois) déployé et testé
 [ ] Mention RGPD documentée et accessible
 [ ] Email DPO configuré
