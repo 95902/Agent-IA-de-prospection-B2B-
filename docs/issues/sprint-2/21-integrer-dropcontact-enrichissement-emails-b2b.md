@@ -17,22 +17,25 @@ Compléter l'enrichissement email (#18) via Dropcontact quand Tavily/Crawl4AI n'
 ## Fichier
 `utils/dropcontact.py`
 
-## Flow
-- [ ] `POST /batch` avec les prospects éligibles → récupération d'un `request_id`
-- [ ] Polling toutes les 5s jusqu'à disponibilité du résultat (avec timeout raisonnable et gestion d'erreur)
-- [ ] Upsert de l'email trouvé sur le prospect concerné
+## Flow (API réelle — spec d'origine corrigée)
+- [x] `POST https://api.dropcontact.com/v1/enrich/all` (corps `{"data":[...],"siren":true}`, header `X-Access-Token`) → `request_id`
+- [x] Polling `GET /v1/enrich/all/{request_id}` jusqu'à `success:true` (timeout + gestion d'erreur, jamais bloquant)
+- [x] Upsert de l'email trouvé (appariement par ordre de réponse)
 
-## Condition d'appel (pour maîtriser le coût — 24€/mois pour ~1000 enrichissements)
+## Condition d'appel (corrigée — website NON requis, garde légale ajoutée)
 ```
-email IS None ET nom_dirigeant IS NOT None ET site_web IS NOT None
+email IS None  ET  nom_dirigeant IS NOT None  ET  peut_etre_contacte(p)
 ```
+`site_web IS NOT None` retiré : jamais vrai en pratique (0 % de sites obtenus) et inutile — Dropcontact matche sans domaine. `nom_dirigeant` désormais peuplé par #67. Website envoyé s'il existe, en bonus.
 
 ## Contraintes
-- Dropcontact génère l'email algorithmiquement (prénom.nom@entreprise.fr), certifié RGPD et hébergé en Europe — ne pas appeler ce service hors de la condition ci-dessus (voir `docs/LEGAL.md`)
-- Logger le nombre d'appels Dropcontact par campagne pour suivre le coût (voir #23)
+- **Garde légale** : n'interroger Dropcontact que pour les prospects vérifiés non opposés (`peut_etre_contacte()`) — le nettoyage #19 tourne avant. Envoyer un prospect opposé chez un enrichisseur tiers est interdit (art. R123-232).
+- Pay on success : les échecs ne coûtent rien ; `budget` plafonne quand même la dépense.
+- Compteurs {eligibles, soumis, emails} exposés pour le suivi de coût (#23).
 
 ## Critères d'acceptance
-- [ ] Seuls les prospects respectant la condition d'appel déclenchent une requête Dropcontact
-- [ ] Le taux d'enrichissement email global (Tavily + Crawl4AI + Dropcontact) atteint la cible PRD (≥20%)
+- [x] Seuls les prospects respectant la condition d'appel déclenchent une requête
+- [x] Aucun prospect opposé (ou non vérifié) n'est soumis
+- [ ] Taux email global (chaîne gratuite + Dropcontact) ≥ 20 % PRD — mesure live (ops)
 
 
