@@ -1,18 +1,20 @@
 """Agent de scoring hybride 3 couches (règles + Claude + embeddings).
 
-Issue #11 — squelette. **Couche 1 (règles métier, #24) implémentée ci-dessous.**
-Les couches 2 (LLM Claude, #25) et 3 (embeddings, #26), l'agrégation/persistance
-(#27) et l'assemblage dans le graphe (`scoring_node`, #28) suivent.
+Issue #11 — squelette. **Couche 1 (règles métier, #24) et couche 3 (embeddings,
+#26) implémentées ci-dessous.** La couche 2 (LLM Claude, #25), l'agrégation/
+persistance (#27) et l'assemblage dans le graphe (`scoring_node`, #28) suivent.
 
 Rappels (CLAUDE.md règles #3/#4/#5/#6) :
 - **Aucune valeur métier codée en dur** : NAF, effectif, mots-clés viennent tous de
   `CriteresCiblage` (l'ICP du client), jamais de constantes Python.
 - Un prospect qui matche une exclusion ICP (`mots_cles_negatifs`) → score = 0 (règle #4).
+- Embeddings **locaux sur CPU** via Ollama (règle #5) — aucune API d'embedding tierce.
 
-Barème détaillé et échelles : `docs/SCORING.md` (couche 1).
+Barème détaillé et échelles : `docs/SCORING.md`.
 """
 from __future__ import annotations
 
+import math
 from datetime import date
 
 # ⟳ RÉUTILISÉ, jamais redéfini : l'exclusion par mot entier (garde légale/business,
@@ -20,6 +22,8 @@ from datetime import date
 from agents.nettoyage_agent import _matche_exclusion
 from models.criteres import CriteresCiblage
 from models.prospect import Prospect
+from utils.db import upsert_prospect_embedding
+from utils.embeddings import get_embedding
 
 
 # --- Couche 1 : règles métier (#24) -----------------------------------------
@@ -116,6 +120,65 @@ def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
         score -= 30
 
     return max(0, min(100, score))
+
+
+# --- Couche 3 : similarité embeddings ICP (#26) -----------------------------
+# Cosinus en Python pur (pas de numpy). Vecteur du prospect généré localement sur
+# CPU via Ollama (règle #5). Renvoie un COSINUS 0-1 ; le ×100 n'a lieu qu'à
+# l'agrégation (#27), cohérent avec models.score.ScoreResult.score_embedding
+# (Field ge=0.0, le=1.0).
+
+def _cosinus(a: list[float], b: list[float]) -> float:
+    """Similarité cosinus entre deux vecteurs, en Python pur (pas de numpy).
+    Renvoie 0.0 si l'un des vecteurs est nul (norme 0) — pas de division par zéro."""
+    produit = sum(x * y for x, y in zip(a, b))
+    norme_a = math.sqrt(sum(x * x for x in a))
+    norme_b = math.sqrt(sum(y * y for y in b))
+    if norme_a == 0.0 or norme_b == 0.0:
+        return 0.0
+    return produit / (norme_a * norme_b)
+
+
+async def _score_embedding(
+    prospect: Prospect,
+    icp_embedding: list[float] | None,
+    prospect_id: str | None = None,
+) -> float:
+    """Similarité cosinus 0-1 entre le prospect et l'ICP du client.
+
+    `icp_embedding` vient de `EtatAgent["icp_embedding"]` (chargé par init_campagne
+    #16 via `get_icp_embedding`). Absent (ICP non initialisé, #12) → couche neutre
+    (`0.0`), on ne bloque pas. Le vecteur du prospect est généré localement (Ollama
+    CPU, règle #5) puis, si un `prospect_id` (UUID BDD retourné par `upsert_prospect`)
+    est fourni, persisté dans Qdrant. Retourne le cosinus borné à [0, 1] ; le ×100
+    est fait à l'agrégation (#27).
+    """
+    if not icp_embedding:
+        return 0.0
+
+    texte = (
+        f"{prospect.nom_entreprise}, {prospect.libelle_naf or ''}, "
+        f"{prospect.effectif_estime or '?'} salariés, "
+        f"{prospect.ville or ''} ({prospect.departement or ''}), "
+        f"créé {prospect.date_creation or '?'}, "
+        f"{'site web présent' if prospect.site_web else 'pas de site web'}"
+    ).strip()
+
+    vecteur = await get_embedding(texte)
+    cosinus = max(0.0, _cosinus(vecteur, icp_embedding))
+
+    if prospect_id:
+        await upsert_prospect_embedding(
+            prospect_id=prospect_id,
+            embedding=vecteur,
+            payload={
+                "campagne_id": str(prospect.campagne_id),
+                "code_naf": prospect.code_naf,
+                "departement": prospect.departement,
+                "nom_entreprise": prospect.nom_entreprise,
+            },
+        )
+    return cosinus
 
 
 # --- Node d'assemblage (#28) — stub -----------------------------------------
