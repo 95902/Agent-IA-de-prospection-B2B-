@@ -23,6 +23,11 @@ class CriteresCiblage(BaseModel):
     exiger_email: bool = False
     mots_cles_positifs: list[str] = Field(default_factory=list)
     mots_cles_negatifs: list[str] = Field(default_factory=list)
+    # Tags OpenStreetMap du type d'établissement ciblé, pour la jointure
+    # géographique (#69). Ex. garages : ["shop=car_repair"] ; boulangeries :
+    # ["shop=bakery"] ; restaurants : ["amenity=restaurant"]. Donnée d'ICP par
+    # campagne (règle #3), jamais codée en dur. Vide → source OSM inapplicable.
+    osm_tags: list[str] = Field(default_factory=list)
     actif: bool = True
 
     @model_validator(mode="after")
