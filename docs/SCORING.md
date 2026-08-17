@@ -1,69 +1,108 @@
 # SCORING.md — Système de scoring hybride (générique, piloté par l'ICP client)
 
+> **Réconcilié le 2026-08-17 avec le code réellement livré** (Sprint 2 fusionné sur
+> `main`). Le pseudocode précédent avait dérivé du modèle Pydantic et des utils réels ;
+> cette version documente les signatures et échelles telles qu'elles existent en base de
+> code, pour que le Sprint 3 (#24-27) code contre le vrai, pas contre le doc. Les points
+> corrigés sont signalés par « **⟳ dérive corrigée** ».
+
 ## Vue d'ensemble
 
 Le scoring combine 3 couches indépendantes pour évaluer le potentiel commercial de chaque prospect, **selon l'ICP défini par le client** (table `criteres_ciblage` / `icp_profiles`). Aucun seuil, code NAF ou mot-clé métier n'est codé en dur : tout est lu depuis la campagne en cours.
 
 ```
 score_final = round(
-    0.35 × score_regles    +  # Règles Python déterministes, paramétrées par l'ICP client
-    0.45 × score_llm       +  # Claude API, prompt généré dynamiquement depuis l'ICP client
-    0.20 × score_embedding    # Similarité cosinus avec l'ICP du client via Qdrant
+    w_regles    × score_regles          +  # 0-100, règles Python déterministes (ICP client)
+    w_llm       × score_llm             +  # 0-100, Claude API, prompt généré depuis l'ICP
+    w_embedding × (score_embedding × 100)   # score_embedding est un COSINUS 0-1 → ×100 ici
 )
 score_final = max(0, min(100, score_final))
 ```
 
+**Poids par défaut** : `w_regles = 0.35`, `w_llm = 0.45`, `w_embedding = 0.20`. Ils sont lus depuis `state["config_scoring"]` (dict `{"poids_regles", "poids_llm", "poids_embedding"}`, alimenté par `init_campagne` #16 depuis `campagnes.config_scoring` JSONB) — **par campagne, jamais globalement**. Absent → défauts ci-dessus.
+
+> **⟳ dérive corrigée — échelle embedding.** `models.score.ScoreResult.score_embedding` est un **cosinus 0-1** (`Field(ge=0.0, le=1.0)`). On stocke le cosinus 0-1 tel quel ; le **×100 n'a lieu que dans la somme pondérée** ci-dessus. Ne jamais persister un embedding déjà ×100.
+
 ### Seuils de qualification
 
-| Score | Statut | Action |
+| Score final | Statut | Action |
 |---|---|---|
 | ≥ 60 | `qualifie` | Apparaît dans `file_appel` |
 | 30–59 | `nouveau` | À revoir manuellement |
 | < 30 | `invalide` | Exclu du pipeline |
 
+`qualifie`, `nouveau`, `invalide` font tous partie de `models.prospect.STATUTS_PROSPECT` (CHECK de la table `prospects`).
+
 ---
 
-## Couche 1 — Règles métier Python (35%)
+## Ordre de persistance — prérequis d'architecture (#28)
 
-Fichier : `agents/scoring_agent.py` → fonction `_score_regles(prospect, criteres)`
+> **⟳ dérive corrigée — `prospect.id` n'existe pas.** Le modèle `models.prospect.Prospect`
+> **n'a pas de champ `id`** (l'UUID est généré en base). Toute la persistance du scoring a
+> besoin de cet id :
+>
+> - `utils.db.upsert_prospect(data: dict) -> str` **retourne l'UUID** (str). Le node de
+>   scoring doit donc **upserter le prospect AVANT de scorer/sauvegarder**, récupérer l'id,
+>   et le porter jusqu'à `save_score` et `upsert_prospect_embedding`.
+> - `save_score(prospect_id, ...)` et `upsert_prospect_embedding(prospect_id, ...)` prennent
+>   cet id str, pas `prospect.id`.
+>
+> Décision pour l'assemblage du graphe (#28) : `… → nettoyer → upsert_prospects → scorer →
+> sauver`. On score sur `(prospect, prospect_id)`.
 
-`criteres` est l'objet `CriteresCiblage` chargé depuis la table `criteres_ciblage` de la campagne en cours (voir `graph/state.py`). **Aucune valeur ci-dessous n'est une constante Python** — elles sont toutes lues depuis `criteres`.
+---
 
-### Barème détaillé
+## Couche 1 — Règles métier Python (poids 0.35 par défaut)
+
+Fichier : `agents/scoring_agent.py` → `_score_regles(prospect, criteres) -> int`
+
+`criteres` est l'objet `models.criteres.CriteresCiblage` chargé depuis `criteres_ciblage`
+(injecté dans `EtatAgent`, cf. `graph/state.py`). **Aucune valeur ci-dessous n'est une
+constante Python** — toutes viennent de `criteres`.
+
+### Barème détaillé (max 100 avant pénalités)
 
 ```python
+import re
+from datetime import date
+
+from agents.nettoyage_agent import _matche_exclusion  # ⟳ RÉUTILISÉ, pas redéfini (voir plus bas)
+from models.criteres import CriteresCiblage
+from models.prospect import Prospect
+
+
 def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
     score = 0
 
-    # CONTACT (max 35 pts) — générique, indépendant du secteur
+    # CONTACT (max 35) — générique, indépendant du secteur.
     if prospect.telephone:
         score += 25
-    if prospect.email and not _is_blacklisted_email(prospect.email):
+    if prospect.email:                       # ⟳ email DÉJÀ nettoyé à la construction (voir §Emails)
         score += 10
 
-    # EFFECTIF (max 20 pts) — position dans la fourchette ICP du client
-    score += _score_effectif(prospect.effectif, criteres.effectif_min, criteres.effectif_max)
+    # EFFECTIF (max 20) — position dans la fourchette ICP.
+    score += _score_effectif(prospect.effectif_estime, criteres.effectif_min, criteres.effectif_max)
 
-    # ANCIENNETÉ (max 15 pts) — seuil minimal défini par le client
+    # ANCIENNETÉ (max 15) — seuil minimal défini par le client.
     if prospect.date_creation:
         score += _score_anciennete(prospect.date_creation, criteres.anciennete_min_ans)
 
-    # PRÉSENCE DIGITALE (max 10 pts) — générique
-    if criteres.exiger_site_web is not False and prospect.site_web:
+    # PRÉSENCE DIGITALE (max 10) — générique.
+    if prospect.site_web:
         score += 8
     if prospect.notes and "avis google" in prospect.notes.lower():
         score += 2
 
-    # GÉOGRAPHIE (max 10 pts) — bonus si dans les départements prioritaires du client
+    # GÉOGRAPHIE (max 10) — bonus si dans les départements prioritaires.
     if prospect.departement in (criteres.departements or []):
         score += 10
 
-    # MOTS-CLÉS POSITIFS (max 10 pts) — bonus si signaux définis par le client sont présents
+    # MOTS-CLÉS POSITIFS (max 10) — signaux définis par le client.
     score += _score_mots_cles_positifs(prospect, criteres.mots_cles_positifs)
 
     # PÉNALITÉS
-    if _matche_exclusion(prospect.nom_entreprise, criteres.mots_cles_negatifs):
-        return 0  # Score forcé à 0 — exclusion définie par le client, jamais codée en dur
+    if _matche_exclusion(prospect, criteres.mots_cles_negatifs):   # ⟳ retourne str|None → truthy = exclu
+        return 0  # Exclusion ICP client (règle #4) — jamais de liste codée en dur.
     if not prospect.telephone and not prospect.email:
         score -= 20
     if criteres.codes_naf and prospect.code_naf not in criteres.codes_naf:
@@ -72,20 +111,19 @@ def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
     return max(0, min(100, score))
 
 
-def _score_effectif(effectif: int | None, effectif_min: int, effectif_max: int) -> int:
-    """Max 20 pts. Pleins points si dans la fourchette ICP du client, dégressif sinon."""
-    if effectif is None:
+def _score_effectif(effectif_estime: int | None, effectif_min: int, effectif_max: int) -> int:
+    """Max 20. ⟳ prend `effectif_estime` (int), PAS `effectif` (libellé texte).
+    Pleins points si dans la fourchette ICP, dégressif sinon."""
+    if effectif_estime is None:
         return 0
-    if effectif_min <= effectif <= effectif_max:
+    if effectif_min <= effectif_estime <= effectif_max:
         return 20
-    ecart = min(abs(effectif - effectif_min), abs(effectif - effectif_max))
-    if ecart <= 3:
-        return 10
-    return 5
+    ecart = min(abs(effectif_estime - effectif_min), abs(effectif_estime - effectif_max))
+    return 10 if ecart <= 3 else 5
 
 
 def _score_anciennete(date_creation: date, anciennete_min_ans: int) -> int:
-    """Max 15 pts. Barème relatif au seuil minimal défini par le client."""
+    """Max 15. Barème relatif au seuil minimal défini par le client."""
     anciennete_ans = (date.today() - date_creation).days / 365.25
     if anciennete_ans < anciennete_min_ans:
         return 0
@@ -97,289 +135,338 @@ def _score_anciennete(date_creation: date, anciennete_min_ans: int) -> int:
 
 
 def _score_mots_cles_positifs(prospect: Prospect, mots_cles: list[str] | None) -> int:
-    """Max 10 pts. +5 par mot-clé positif trouvé dans les données du prospect, plafonné à 10."""
+    """Max 10. +5 par mot-clé positif trouvé dans les données du prospect, plafonné à 10."""
     if not mots_cles:
         return 0
-    texte = f"{prospect.nom_entreprise} {prospect.libelle_naf} {prospect.notes or ''}".lower()
+    texte = f"{prospect.nom_entreprise} {prospect.libelle_naf or ''} {prospect.notes or ''}".lower()
     hits = sum(1 for mot in mots_cles if mot.lower() in texte)
     return min(hits * 5, 10)
-
-
-def _matche_exclusion(nom_entreprise: str, mots_cles_negatifs: list[str] | None) -> bool:
-    """Exclusion par mot entier (pas de sous-chaîne) pour éviter les faux positifs
-    (ex: un garage "Le Carrefour Auto" ne doit pas matcher l'exclusion "Carrefour")."""
-    if not mots_cles_negatifs:
-        return False
-    mots_prospect = set(re.findall(r"\w+", nom_entreprise.lower()))
-    return any(mot.lower() in mots_prospect for mot in mots_cles_negatifs)
 ```
 
-> ⚠️ **Point corrigé** : dans une version antérieure de ce document, le barème effectif définissait un dict `effectif_map` jamais appliqué au score, et utilisait une variable `anciennete` jamais calculée. Le code ci-dessus corrige les deux : `_score_effectif` et `_score_anciennete` sont des fonctions pures, testables indépendamment (voir issue #26).
+### Exclusion — réutiliser `_matche_exclusion`, ne pas la redéfinir
 
-### Exclusions — configurables par client, jamais codées en dur
+> **⟳ dérive corrigée — `_matche_exclusion` existe déjà.** Elle vit dans
+> `agents/nettoyage_agent.py` avec la signature réelle :
+>
+> ```python
+> def _matche_exclusion(prospect: Prospect, negatifs: list[str]) -> str | None:
+>     """Retourne le 1er mot-clé négatif présent en MOT ENTIER dans le nom de
+>     l'entreprise (multi-mots supportés : « groupe casino »), ou None."""
+> ```
+>
+> Elle prend le **`Prospect` entier** (pas `nom_entreprise: str`) et retourne le
+> **mot-clé matché ou `None`** (pas un bool). Matching par mot entier normalisé
+> (`_normalize`, sans accents), jamais par sous-chaîne — « Carrefour » n'exclut pas
+> « Garage du Carrefour ». **Le scoring l'importe et fait un test de vérité** (`if
+> _matche_exclusion(...)`). Aucune liste de marques/groupes en dur (règle #4).
+>
+> `_matche_exclusion` et `_normalize` sont « privées » à `nettoyage_agent`. Deux options
+> pour #24 : (a) les importer telles quelles (le plus rapide, conforme à « ne pas
+> redéfinir ») ; (b) les promouvoir dans un `utils/text.py` partagé et faire pointer
+> nettoyage + scoring dessus. Option (a) recommandée pour ce jalon ; (b) si l'équipe
+> préfère éviter la dépendance inter-agents.
 
-Il n'existe **aucune liste de marques ou de groupes en dur dans le code**. Chaque client renseigne ses propres `mots_cles_negatifs` dans `criteres_ciblage` lors de la configuration de son ICP (issue #S0-4 / #7). Exemple pour un client ciblant des garages indépendants :
+### Emails — la politique vit dans le modèle, pas dans le scoring
 
-```
-mots_cles_negatifs = ['norauto', 'midas', 'speedy', 'feu vert', 'mobivia']
-```
-
-Un client dans un autre secteur définira une liste totalement différente (ex: `['mcdonald', 'quick', 'burger king']` pour un client ciblant la restauration indépendante). Le matching se fait par **mot entier normalisé**, pas par sous-chaîne, pour éviter les faux positifs (ex: "Carrefour" ne doit pas exclure "Garage du Carrefour").
-
-### Emails blacklistés (score email = 0) — générique, tous secteurs
-
-```python
-EMAIL_BLACKLIST_DOMAINS = [
-    'pagesjaunes.fr', 'laposte.net', 'noreply.',
-    'contact@', 'info@', 'mairie.'
-]
-```
+> **⟳ dérive corrigée — pas de re-blacklist dans le scoring.** L'ancienne version listait
+> `EMAIL_BLACKLIST_DOMAINS = ['contact@', 'info@', …]` : **faux depuis #65**. La politique
+> réelle est appliquée **à la construction du `Prospect`** par `models.prospect._clean_email`
+> (validator `email`), qui met `email = None` si :
+>
+> - domaine hors-entreprise : `EMAIL_BLACKLIST_DOMAINS = ("pagesjaunes.fr", "laposte.net",
+>   "noreply.", "mairie.")` (sous-chaîne sur le **domaine** uniquement) ;
+> - rôle à écarter : `EMAIL_BLACKLIST_ROLES = {"noreply", "reply", "dpo", "rgpd", "cnil",
+>   "privacy", "personnelles"}` (comparé à la **partie locale tokenisée**, jamais par
+>   sous-chaîne — « dupont » ne matche pas « dpo »).
+>
+> Les génériques **commerciales** (`contact@`, `info@`, `reservation@`, `bonjour@`,
+> `reception@`…) sont **conservées** (décision équipe D1 / #65 — ~30 % des emails de la
+> chaîne gratuite). Conséquence pour le scoring : quand un `Prospect` existe, `prospect.email`
+> est **soit une adresse acceptable, soit `None`**. La couche règles crédite donc simplement
+> `if prospect.email: score += 10`. **Ne pas re-filtrer ici.**
 
 ---
 
-## Couche 2 — Scoring LLM Claude (45%)
+## Couche 2 — Scoring LLM Claude (poids 0.45 par défaut)
 
-Fichier : `agents/scoring_agent.py` → fonction `_score_llm(prospect, criteres, client)`, template `prompts/scorer_system.txt.j2`, `prompts/scorer_user.txt.j2`
+Fichier : `agents/scoring_agent.py` → `_score_llm(...)`, templates
+`prompts/scorer_system.txt.j2` + `prompts/scorer_user.txt.j2` (aujourd'hui des **stubs**
+à compléter en #25).
 
-**Le prompt système n'est plus un texte figé** : il est généré dynamiquement à partir du profil du client (`clients.produit_vendu`, `clients.secteur`) et de la description ICP (`criteres_ciblage.description_icp`). Ceci permet au même agent de scorer des garages pour un courtier en assurance ou des cabinets comptables pour un éditeur SaaS RH, sans changer une ligne de code.
+**API Claude UNIQUEMENT** (règle #6 — pas d'OpenRouter ni de passerelle tierce : surface
+RGPD/DPA sur des PII prospects). **Async** (règle #8) : `AsyncAnthropic`.
 
-### Choix du modèle
+### Modèle — configurable, jamais codé en dur
 
-Le modèle utilisé est configuré dans `config/settings.py` (variable `CLAUDE_SCORING_MODEL`), pas codé en dur dans le prompt. Pour une tâche de classification structurée (score + justification courte), `claude-haiku-4-5` est un bon point de départ coût/qualité — à arbitrer par A/B test contre un modèle plus capable si la précision de scoring l'exige (voir issue #27, audit qualité).
+`settings.claude_scoring_model` (défaut **`claude-haiku-4-5`**, acté ; #32 ré-arbitre Haiku
+vs Sonnet). Jamais écrit dans le prompt.
 
-### Prompt système (`scorer_system.txt.j2`)
+> **⚠️ Le code doit rester agnostique du modèle** — c'est le piège n°1 de #25. Les
+> paramètres n'ont pas la même validité selon le modèle configuré :
+>
+> | Paramètre | Haiku 4.5 | Sonnet 5 |
+> |---|---|---|
+> | `output_config.effort` | **erreur** | OK (`low`…`max`) |
+> | `temperature` / `top_p` | OK | **400** |
+> | `thinking` adaptatif | non supporté | OK |
+> | `output_config.format` (sortie structurée) | **OK** | **OK** |
+> | `cache_control` system | OK (min **4096** tok) | OK (min **1024** tok) |
+>
+> → **Ne fixer NI `effort`, NI `temperature`/`top_p`, NI `thinking`.** S'appuyer sur les
+> défauts + la **sortie structurée** (`output_config.format`), valide sur les deux modèles.
+> C'est suffisamment déterministe pour une classification bornée.
 
-```jinja2
-Tu es un expert commercial B2B. Tu évalues des prospects pour le compte de
-{{ client.nom_entreprise }}, qui vend {{ client.produit_vendu }} à des
-entreprises du secteur "{{ criteres.nom }}".
+### Prompts — rendus dynamiquement depuis l'ICP (Jinja2)
 
-Profil client idéal (ICP) défini par ce client :
-{{ criteres.description_icp }}
+Les stubs actuels utilisent des **variables plates** (pas des objets `client.`/`prospect.`) —
+respecter ce contrat en #25 :
 
-Ton rôle : évaluer le potentiel commercial de chaque prospect au regard de cet
-ICP et retourner UNIQUEMENT un JSON valide, sans texte avant ou après.
+- `scorer_system.txt.j2` reçoit : `client_nom`, `description_icp`, `codes_naf`,
+  `effectif_min`, `effectif_max`, `mots_cles_positifs`, `mots_cles_negatifs`.
+- `scorer_user.txt.j2` reçoit : `nom_entreprise`, `siret`, `code_naf`, `libelle_naf`,
+  `effectif_estime`, `ville`, `departement`, `site_web`, `mots_cles_detectes`.
 
-Critères d'évaluation (à pondérer selon la description ICP ci-dessus) :
-- Adéquation générale avec l'ICP décrit
-- Taille d'entreprise adaptée (cible : {{ criteres.effectif_min }}-{{ criteres.effectif_max }} salariés)
-- Ancienneté / stabilité (minimum {{ criteres.anciennete_min_ans }} ans)
-- Zone géographique dans les départements ciblés
-- Présence digitale pertinente pour ce secteur
-- Tout signal d'activité pertinent au regard de l'ICP, même non listé explicitement
-```
+Le **system varie par campagne** (pas par prospect) : le rendre **une fois par campagne** et
+le réutiliser pour chaque prospect (candidat au cache, cf. ci-dessous). Le user est rendu par
+prospect. À compléter dans les templates : les instructions de scoring + le **schéma JSON de
+sortie** (aujourd'hui un `TODO` dans les stubs).
 
-### Prompt utilisateur (`scorer_user.txt.j2`)
+### Appel + sortie structurée + cache
 
-```jinja2
-Évalue ce prospect :
+```python
+import json
+from anthropic import AsyncAnthropic, APIConnectionError, APIStatusError, RateLimitError
 
-Entreprise : {{ prospect.nom_entreprise }}
-SIRET : {{ prospect.siret }}
-Activité : {{ prospect.libelle_naf }} ({{ prospect.code_naf }})
-Localisation : {{ prospect.ville }} ({{ prospect.departement }}, {{ prospect.code_postal }})
-Effectif : {{ prospect.effectif }}
-Créé le : {{ prospect.date_creation }}
-Téléphone : {{ prospect.telephone }}
-Email : {{ prospect.email }}
-Site web : {{ prospect.site_web }}
-Informations complémentaires : {{ prospect.notes }}
+from config.settings import get_settings
 
-Retourne ce JSON exact :
-{
-  "score": <entier 0-100>,
-  "justification": "<phrase de 20-50 mots expliquant le score au regard de l'ICP>",
-  "signaux_positifs": ["<signal1>", "<signal2>"],
-  "signaux_negatifs": ["<signal1>"],
-  "priorite": "<haute|moyenne|basse>"
+_SCORE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "score": {"type": "integer"},                 # 0-100 (borne validée côté code)
+        "justification": {"type": "string"},
+        "signaux_positifs": {"type": "array", "items": {"type": "string"}},
+        "signaux_negatifs": {"type": "array", "items": {"type": "string"}},
+        "priorite": {"type": "string", "enum": ["haute", "moyenne", "basse"]},
+    },
+    "required": ["score", "justification", "signaux_positifs", "signaux_negatifs", "priorite"],
+    "additionalProperties": False,
 }
-```
 
-### Paramètres d'appel Claude + prompt caching
-
-Le prompt système varie **par campagne** (pas par prospect) — c'est donc un excellent candidat au cache : des centaines de prospects d'une même campagne partagent le même system prompt rendu. Activer le cache dessus réduit son coût d'environ 90% sur tous les appels après le premier de la campagne.
-
-```python
-response = client.messages.create(
-    model=settings.CLAUDE_SCORING_MODEL,  # jamais codé en dur, voir config/settings.py
-    max_tokens=300,
-    system=[{
-        "type": "text",
-        "text": system_prompt_rendu,       # rendu une fois par campagne, réutilisé pour chaque prospect
-        "cache_control": {"type": "ephemeral"},
-    }],
-    messages=[{"role": "user", "content": user_prompt}],
-)
-# Coût cible : < 0.003€/prospect (surveiller via LangSmith, par client)
-```
-
-### Parsing robuste du JSON
-
-```python
-import json, re
-
-def _parse_score_llm(response_text: str) -> dict:
-    clean = re.sub(r'```json|```', '', response_text).strip()
+async def _score_llm(client: AsyncAnthropic, system_rendu: str, user_rendu: str,
+                     score_regles_fallback: int) -> dict:
+    settings = get_settings()
     try:
-        data = json.loads(clean)
-        assert 0 <= data['score'] <= 100
-        assert len(data['justification']) >= 20
-        return data
-    except Exception:
-        return {"score": 50, "justification": "Parsing error",
-                "signaux_positifs": [], "signaux_negatifs": [],
-                "priorite": "moyenne"}
+        resp = await client.messages.create(
+            model=settings.claude_scoring_model,       # jamais codé en dur (règle #6)
+            max_tokens=400,                            # score + justification courte + signaux
+            system=[{                                  # rendu 1×/campagne, réutilisé par prospect
+                "type": "text",
+                "text": system_rendu,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            messages=[{"role": "user", "content": user_rendu}],
+            output_config={"format": {"type": "json_schema", "schema": _SCORE_SCHEMA}},
+            # ⚠️ NI effort, NI temperature, NI thinking — cf. tableau modèle ci-dessus.
+        )
+    except (RateLimitError, APIStatusError, APIConnectionError) as e:
+        logger.warning("Claude indisponible (%s) — fallback score règles.", e)
+        return {"score": score_regles_fallback, "justification": "Fallback règles (Claude indisponible)",
+                "signaux_positifs": [], "signaux_negatifs": [], "priorite": "moyenne"}
+
+    # output_config.format garantit un 1er bloc texte = JSON valide conforme au schéma.
+    data = json.loads(next(b.text for b in resp.content if b.type == "text"))
+    data["score"] = max(0, min(100, int(data["score"])))   # borne (le schéma ne l'impose pas)
+    return data
 ```
+
+> **⚠️ Cache : ne pas promettre 90 %.** Le minimum cacheable est **4096 tokens sur Haiku 4.5**
+> (1024 sur Sonnet 5). Un system d'ICP court **ne se mettra pas en cache** (échec silencieux :
+> `cache_creation_input_tokens = 0`). **Vérifier `resp.usage.cache_read_input_tokens`** avant
+> d'annoncer une économie. Le `cache_control` reste posé (bénéfice réel quand l'ICP est long),
+> mais l'économie n'est pas garantie pour tous les clients.
+>
+> **⟳ dérive corrigée — plus de regex.** L'ancien `_parse_score_llm` (regex + `json.loads` +
+> assertions) est remplacé par `output_config.format` : plus robuste, supporté Haiku 4.5 et
+> Sonnet 5. Le schéma JSON **ne peut pas** contraindre la longueur (`minLength` non supporté) →
+> si une justification minimale est requise, la valider côté code (ou l'abandonner).
+
+### Mapping vers `ScoreResult`
+
+> **⟳ dérive corrigée — noms de champs.** La sortie LLM `justification` → `ScoreResult.
+> justification_llm` (le modèle Pydantic utilise `justification_llm`, pas `justification`).
+> `score` → `score_llm` ; `signaux_positifs`/`signaux_negatifs`/`priorite` mappent tels quels
+> (`priorite` ∈ `{"haute","moyenne","basse"}`, cohérent avec le `Literal` du modèle).
+
+### Fallback si Claude down
+
+Déjà intégré ci-dessus : sur `RateLimitError`/`APIStatusError`/`APIConnectionError`, `score_llm
+= score_regles`. Effet sur l'agrégation (poids par défaut) :
+`0.35·règles + 0.45·règles + 0.20·(embedding×100) = 0.80·règles + 0.20·(embedding×100)`.
 
 ---
 
-## Couche 3 — Similarité embeddings ICP (20%)
+## Couche 3 — Similarité embeddings ICP (poids 0.20 par défaut)
 
-Fichier : `agents/scoring_agent.py` → fonction `_score_embedding(prospect)`
+Fichier : `agents/scoring_agent.py` → `_score_embedding(...)`
 
-### Algorithme complet
+> **⟳ dérive corrigée — utils réels + cosinus Python pur.** L'ancienne version appelait
+> `ollama_client.embeddings(model=…, prompt=…)` et `numpy`. La réalité :
+>
+> - Embedding : `utils.embeddings.get_embedding(text) -> list[float]` (async, Ollama
+>   `/api/embed`, 768 dims, garde-fou dimension). **Pas de client Ollama à passer.**
+> - `numpy` **n'est pas une dépendance** → cosinus en **Python pur** (dot/normes).
+> - Retourne le **cosinus 0-1** (pas ×100). Le ×100 est fait à l'agrégation.
+> - Vecteur ICP : `state["icp_embedding"]` (alimenté par `init_campagne` #16 via
+>   `utils.db.get_icp_embedding`). Si `None` (ICP non initialisé, #12) → couche neutralisée
+>   (retourner `0.0`, ne pas planter).
+> - Persistance Qdrant : `utils.db.upsert_prospect_embedding(prospect_id, vector, payload)`
+>   avec **l'id BDD** (str, issu de `upsert_prospect`), pas `prospect.id`.
 
 ```python
-async def _score_embedding(
-    prospect: Prospect,
-    icp_embedding: list[float],   # vecteur ICP du client, chargé depuis icp_profiles
-    ollama_client,
-    qdrant_client
-) -> float:
+import math
 
-    # 1. Construire texte de description du prospect (générique, tous secteurs)
-    texte = f"""
-    {prospect.nom_entreprise}, {prospect.libelle_naf},
-    {prospect.effectif} salariés, {prospect.ville} ({prospect.departement}),
-    créé en {prospect.date_creation},
-    {"site web présent" if prospect.site_web else "pas de site web"}
-    """.strip()
+from utils.db import upsert_prospect_embedding
+from utils.embeddings import get_embedding
 
-    # 2. Générer embedding via Ollama (CPU, gratuit)
-    response = await ollama_client.embeddings(
-        model="nomic-embed-text",
-        prompt=texte
-    )
-    prospect_embedding = response['embedding']  # 768 dims
 
-    # 3. Calculer similarité cosinus avec l'ICP du client
-    import numpy as np
-    a = np.array(prospect_embedding)
-    b = np.array(icp_embedding)
-    similarite = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+def _cosinus(a: list[float], b: list[float]) -> float:
+    """Cosinus en Python pur (pas de numpy)."""
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    if na == 0.0 or nb == 0.0:
+        return 0.0
+    return dot / (na * nb)
 
-    # 4. Stocker vecteur dans Qdrant
-    await upsert_prospect_embedding(
-        prospect_id=str(prospect.id),
-        embedding=prospect_embedding,
-        payload={
-            "nom_entreprise": prospect.nom_entreprise,
-            "code_naf": prospect.code_naf,
-            "departement": prospect.departement,
-            "effectif": prospect.effectif,
-            "campagne_id": str(prospect.campagne_id),
-            "score_final": 0  # mis à jour après agrégation
-        }
-    )
 
-    # 5. Retourner score [0-100]
-    return float(max(0, similarite)) * 100
+async def _score_embedding(prospect: Prospect, icp_embedding: list[float] | None,
+                           prospect_id: str | None = None) -> float:
+    if not icp_embedding:                     # ICP non initialisé → couche neutre
+        return 0.0
+
+    texte = (
+        f"{prospect.nom_entreprise}, {prospect.libelle_naf or ''}, "
+        f"{prospect.effectif_estime or '?'} salariés, {prospect.ville or ''} "
+        f"({prospect.departement or ''}), créé {prospect.date_creation or '?'}, "
+        f"{'site web présent' if prospect.site_web else 'pas de site web'}"
+    ).strip()
+
+    vecteur = await get_embedding(texte)      # 768 dims (Ollama CPU, gratuit)
+    cos = max(0.0, _cosinus(vecteur, icp_embedding))   # borne [0, 1]
+
+    if prospect_id:                           # id BDD (str), pas prospect.id (inexistant)
+        await upsert_prospect_embedding(
+            prospect_id=prospect_id,
+            embedding=vecteur,
+            payload={                         # cohérent avec db._PAYLOAD_INDEXES (keyword)
+                "campagne_id": str(prospect.campagne_id),
+                "code_naf": prospect.code_naf,
+                "departement": prospect.departement,
+                "nom_entreprise": prospect.nom_entreprise,
+            },
+        )
+    return cos                                # COSINUS 0-1 (×100 seulement à l'agrégation)
 ```
 
-### Profil ICP — stocké par client, pas codé en dur
+### Profil ICP — stocké par client, jamais codé en dur
 
-Le profil ICP n'est **plus un fichier Python statique**. Il vit en base :
+Le profil ICP vit en base, pas dans un fichier Python :
 
-- `criteres_ciblage.description_icp` (TEXT) — la description ICP en langage naturel, rédigée par/avec le client
-- `criteres_ciblage.codes_naf`, `.departements`, `.effectif_min/max`, `.anciennete_min_ans`, `.mots_cles_positifs/negatifs` — les critères structurés
-- `icp_profiles.qdrant_point_id` — le vecteur embedding de la description ICP, généré une fois par `scripts/init_icp.py --client-id <uuid>` (voir issue #7)
+- `criteres_ciblage.description_icp` (TEXT) — description ICP en langage naturel ;
+- `criteres_ciblage.{codes_naf, departements, effectif_min/max, anciennete_min_ans,
+  mots_cles_positifs/negatifs, osm_tags}` — critères structurés (`models.criteres.CriteresCiblage`) ;
+- vecteur ICP dans Qdrant (collection `icp_profiles`), généré par `scripts/init_icp.py`,
+  récupéré via `get_icp_embedding` et injecté dans `state["icp_embedding"]`.
 
-**Exemple illustratif** (un client ciblant des garages indépendants pour un produit d'assurance — à adapter entièrement pour tout autre client/secteur) :
+**Exemple illustratif** (client courtier ciblant des garages indépendants — à adapter
+entièrement pour tout autre client/secteur, règle #3) :
 
 ```
-Exemple de description_icp saisie par un client courtier en assurance :
-
-"Garage automobile indépendant, mécanicien ou carrossier, employant entre 2
-et 15 salariés, en activité depuis au moins 3 ans. N'appartient pas à un
-réseau franchisé."
-
-codes_naf = ['4520Z', '4511Z', '4531Z', '4532Z']
-effectif_min = 2, effectif_max = 15
-anciennete_min_ans = 3
-departements = ['75', '92', '93', '94']
+description_icp = "Garage automobile indépendant, mécanicien ou carrossier, 2 à 15
+                   salariés, en activité depuis au moins 3 ans. Hors réseau franchisé."
+codes_naf       = ['4520Z', '4511Z', '4531Z', '4532Z']
+effectif_min/max = 2 / 15 ; anciennete_min_ans = 3 ; departements = ['75','92','93','94']
 mots_cles_negatifs = ['norauto', 'midas', 'speedy', 'feu vert']
+osm_tags        = ['shop=car_repair']
 ```
-
-Un autre client (ex: éditeur SaaS RH ciblant des PME industrielles) renseignerait une `description_icp`, des `codes_naf` et des `mots_cles_negatifs` complètement différents — **sans toucher au code**.
 
 ---
 
 ## Agrégation finale + persistance
 
+Fichier : `agents/scoring_agent.py` → agrégation dans le node, puis `utils.db.save_score`.
+
 ```python
-async def agreger_et_sauvegarder(
-    prospect: Prospect,
-    score_regles: int,
-    score_llm: int,
-    score_embedding: float,
-    justification_llm: str,
-    pool, qdrant_client
-):
+from config.settings import get_settings
+from models.score import ScoreResult
+
+
+def _statut(score_final: int) -> str:
+    return "qualifie" if score_final >= 60 else "invalide" if score_final < 30 else "nouveau"
+
+
+async def agreger_et_sauvegarder(prospect_id: str, result: ScoreResult,
+                                 config_scoring: dict | None) -> str:
+    cfg = config_scoring or {}
+    w_r = cfg.get("poids_regles", 0.35)
+    w_l = cfg.get("poids_llm", 0.45)
+    w_e = cfg.get("poids_embedding", 0.20)
+
     score_final = round(
-        0.35 * score_regles +
-        0.45 * score_llm +
-        0.20 * score_embedding
+        w_r * result.score_regles
+        + w_l * result.score_llm
+        + w_e * (result.score_embedding * 100)   # ⟳ ×100 ICI seulement (cosinus 0-1 → 0-100)
     )
     score_final = max(0, min(100, score_final))
+    statut = _statut(score_final)
 
-    statut = (
-        'qualifie' if score_final >= 60 else
-        'invalide' if score_final < 30 else
-        'nouveau'
-    )
-
-    await update_prospect_score(prospect.id, score_final, statut, pool)
-
-    await save_score(prospect.id, {
-        "score_regles": score_regles,
-        "score_llm": score_llm,
-        "score_embedding": score_embedding,
+    settings = get_settings()
+    await save_score(prospect_id, {
+        "score_regles": result.score_regles,
+        "score_llm": result.score_llm,
+        "score_embedding": result.score_embedding,   # cosinus 0-1 (colonne dédiée)
         "score_final": score_final,
-        "justification_llm": justification_llm,
+        "justification_llm": result.justification_llm,
         "prompt_version": "v2.0-generique",
-    }, pool)
-
-    if statut == 'qualifie':
-        await increment_campagne_kpi(prospect.campagne_id, 'prospects_qualifies', pool)
+        "modele_llm": settings.claude_scoring_model,  # ⟳ colonne `scores.modele_llm`
+        "details": {                                  # ⟳ colonne `scores.details` (JSONB)
+            "signaux_positifs": result.signaux_positifs,
+            "signaux_negatifs": result.signaux_negatifs,
+            "priorite": result.priorite,
+            "statut": statut,
+        },
+    })
+    return statut
 ```
 
----
-
-## Fallback si Claude API down
-
-```python
-async def scorer_avec_fallback(prospect, criteres, llm_client, ...):
-    try:
-        score_llm = await _score_llm_claude(prospect, criteres, llm_client)
-    except Exception as e:
-        logger.warning(f"Claude API indisponible: {e}. Fallback règles seules.")
-        score_llm = score_regles  # utilise le score règles comme proxy
-        # score_final = 0.35*règles + 0.45*règles + 0.20*embedding
-        #             = 0.80*règles + 0.20*embedding
-```
+> **⟳ dérive corrigée — fonctions inexistantes.** `update_prospect_score(...)` et
+> `increment_campagne_kpi(...)` **n'existent pas** dans `utils/db.py`. À la place :
+>
+> - **`save_score(prospect_id, score_data)`** insère dans `scores` **ET** met à jour
+>   `prospects.score_{regles,llm,embedding,final}` dans une transaction. Champs acceptés :
+>   `score_regles, score_llm, score_embedding, score_final, justification_llm,
+>   prompt_version, modele_llm, details`.
+> - **⚠️ `save_score` ne pose PAS le `statut`** aujourd'hui (l'UPDATE ne touche que les
+>   `score_*`). **À étendre en #27** : ajouter un paramètre `statut` et la colonne à l'UPDATE
+>   `prospects` (ou faire un UPDATE séparé). En attendant, le `statut` est transporté dans
+>   `details` (traçabilité) et renvoyé par la fonction.
+> - Le compteur de qualifiés vit dans `state["qualifies"]` (incrémenté dans le node) — il n'y
+>   a **pas** d'`increment_campagne_kpi`.
 
 ---
 
 ## Calibration et ajustement (par client/campagne)
 
-Après l'audit qualité (issue #27), si l'accord humain/score < 75% pour un client donné :
+Après l'audit qualité (#32), si l'accord humain/score est insuffisant pour un client :
 
 ```python
-# Ajuster les poids dans la config de LA campagne concernée (pas globalement)
+# Ajuster les poids de LA campagne concernée (jamais globalement).
 config_scoring = {
     "poids_regles":    0.35,  # ↑ si les règles sont plus fiables pour ce secteur
     "poids_llm":       0.45,  # ↓ si Claude hallucine trop sur cet ICP
-    "poids_embedding": 0.20   # ↑ si la similarité ICP est particulièrement pertinente
+    "poids_embedding": 0.20,  # ↑ si la similarité ICP est particulièrement pertinente
 }
-# Stocké dans campagnes.config_scoring JSONB — par campagne, jamais globalement
+# Stocké dans campagnes.config_scoring (JSONB) → chargé par init_campagne dans state["config_scoring"].
 ```
+
+Suivi coût/prospect via LangSmith (#30) + `utils.metrics` (#23). Cible < 0,003 €/prospect.
