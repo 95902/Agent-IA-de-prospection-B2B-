@@ -24,6 +24,10 @@ class EtatAgent(TypedDict, total=False):
     prospects: list[Prospect]
     config_scoring: dict  # poids des 3 couches (depuis campagnes.config_scoring)
 
+    # Paramètres d'exécution (posés par le CLI #29)
+    limit: int       # plafond de collecte (sirene) ; défaut node = 500
+    dry_run: bool    # True → aucune écriture BDD/Qdrant (scoring en mémoire)
+
     # Suivi d'exécution
     erreurs: list[str]
     collectes: int

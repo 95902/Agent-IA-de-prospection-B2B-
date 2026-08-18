@@ -428,7 +428,11 @@ async def scoring_node(state: EtatAgent) -> EtatAgent:
 
     La persistance est câblée ICI plutôt que dans un node « sauvegarder » distinct :
     `save_score` et `_score_embedding` (upsert du vecteur Qdrant) ont besoin de l'`id`
-    retourné par `upsert_prospect`, indisponible avant le scoring."""
+    retourné par `upsert_prospect`, indisponible avant le scoring.
+
+    `state["dry_run"]` (CLI #29) : scoring calculé en mémoire (règles + LLM + embedding),
+    **aucune écriture** — pas d'`upsert_prospect`, pas de `save_score`, pas de vecteur
+    Qdrant (embedding avec `prospect_id=None`). Sert le mode ad hoc / validation locale."""
     prospects = state.get("prospects") or []
     state.setdefault("erreurs", [])
     state.setdefault("qualifies", 0)
@@ -438,6 +442,7 @@ async def scoring_node(state: EtatAgent) -> EtatAgent:
     criteres = state["criteres"]
     icp_embedding = state.get("icp_embedding")
     config_scoring = state.get("config_scoring")
+    dry_run = bool(state.get("dry_run"))
     settings = get_settings()
 
     # Rendu 1×/campagne (system = candidat au cache) ; un seul client Claude pour le lot.
@@ -445,18 +450,26 @@ async def scoring_node(state: EtatAgent) -> EtatAgent:
     async with anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key) as client:
         for prospect in prospects:
             try:
-                prospect_id = await upsert_prospect(prospect.to_db_dict())
                 score_regles = _score_regles(prospect, criteres)
                 user_rendu = rendre_user(prospect)
                 llm = await _score_llm(
                     client, system_rendu, user_rendu, score_regles_fallback=score_regles
                 )
-                score_embedding = await _score_embedding(prospect, icp_embedding, prospect_id)
-                resultat = await agreger_et_sauvegarder(
-                    prospect_id, score_regles, llm, score_embedding, config_scoring,
-                    modele_llm=settings.claude_scoring_model,
-                )
-                if _statut_pour_score(resultat.score_final) == "qualifie":
+                if dry_run:
+                    # Aucune écriture : embedding sans persistance (id=None), agrégation pure.
+                    score_embedding = await _score_embedding(prospect, icp_embedding, None)
+                    score_final, statut = _agreger(
+                        score_regles, llm["score"], score_embedding, config_scoring
+                    )
+                else:
+                    prospect_id = await upsert_prospect(prospect.to_db_dict())
+                    score_embedding = await _score_embedding(prospect, icp_embedding, prospect_id)
+                    resultat = await agreger_et_sauvegarder(
+                        prospect_id, score_regles, llm, score_embedding, config_scoring,
+                        modele_llm=settings.claude_scoring_model,
+                    )
+                    statut = _statut_pour_score(resultat.score_final)
+                if statut == "qualifie":
                     state["qualifies"] += 1
             except Exception as exc:  # un prospect en échec ne casse pas la campagne (#28)
                 logger.warning(

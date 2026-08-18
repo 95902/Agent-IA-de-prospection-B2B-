@@ -60,6 +60,12 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
         `etat` enrichi avec `client_id`, `criteres` (CriteresCiblage),
         `icp_embedding` (**vecteur** `list[float]` de l'ICP, ou None), `config_scoring`.
     """
+    # Mode ad hoc (#29) : si l'état est déjà peuplé (criteres synthétisés depuis les
+    # flags CLI --depts/--naf, sans campagne en base), init_campagne est un no-op —
+    # on ne relit pas la BDD. Idempotent aussi si le node est ré-exécuté.
+    if etat.get("criteres") is not None:
+        return etat
+
     campagne_id_raw = etat.get("campagne_id")
     if not campagne_id_raw:
         raise CampagneIntrouvableError(

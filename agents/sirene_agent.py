@@ -159,6 +159,7 @@ async def sirene_node(state: EtatAgent, limit: int = 500) -> EtatAgent:
     """
     criteres: CriteresCiblage = state["criteres"]
     campagne_id = state["campagne_id"]
+    limit = state.get("limit") or limit  # plafond CLI (#29) prioritaire sur le défaut
     api_key = get_settings().insee_api_key
     if not api_key:
         raise RuntimeError("INSEE_API_KEY manquante (voir .env / config.settings).")
