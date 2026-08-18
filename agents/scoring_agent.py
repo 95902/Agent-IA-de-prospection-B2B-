@@ -14,16 +14,29 @@ Barème détaillé et échelles : `docs/SCORING.md`.
 """
 from __future__ import annotations
 
+import json
+import logging
 import math
 from datetime import date
+from pathlib import Path
+
+import anthropic
+from jinja2 import Environment, FileSystemLoader
 
 # ⟳ RÉUTILISÉ, jamais redéfini : l'exclusion par mot entier (garde légale/business,
 # règle #4) a une seule source de vérité, partagée avec le nettoyage (#19).
 from agents.nettoyage_agent import _matche_exclusion
+from config.settings import get_settings
 from models.criteres import CriteresCiblage
 from models.prospect import Prospect
 from utils.db import upsert_prospect_embedding
 from utils.embeddings import get_embedding
+
+logger = logging.getLogger(__name__)
+
+# Environnement Jinja des templates de prompt (rendus dynamiquement depuis l'ICP, #25).
+_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+_JINJA_ENV = Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)), autoescape=False)
 
 
 # --- Couche 1 : règles métier (#24) -----------------------------------------
@@ -120,6 +133,119 @@ def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
         score -= 30
 
     return max(0, min(100, score))
+
+
+# --- Couche 2 : scoring LLM Claude (#25) ------------------------------------
+# API Claude UNIQUEMENT (règle #6), AsyncAnthropic (règle #8). Sortie STRUCTURÉE
+# (output_config.format) plutôt que parsing regex. Modèle = settings.claude_scoring_model
+# (défaut Haiku 4.5), jamais codé en dur (règle #6). Code AGNOSTIQUE du modèle : on ne
+# fixe NI effort, NI temperature, NI thinking (Haiku refuse effort ; Sonnet 5 refuse
+# temperature/top_p) — défauts + schéma suffisent pour une classification bornée. Repli
+# sur le score règles si Claude est indisponible. Voir docs/SCORING.md (couche 2).
+
+# ⚠️ La sortie structurée ne contraint NI les bornes (minimum/maximum) NI la longueur
+# (minLength) — non supportés. "score" est donc borné [0, 100] côté code.
+_SCORE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "score": {"type": "integer"},
+        "justification": {"type": "string"},
+        "signaux_positifs": {"type": "array", "items": {"type": "string"}},
+        "signaux_negatifs": {"type": "array", "items": {"type": "string"}},
+        "priorite": {"type": "string", "enum": ["haute", "moyenne", "basse"]},
+    },
+    "required": [
+        "score", "justification", "signaux_positifs", "signaux_negatifs", "priorite",
+    ],
+    "additionalProperties": False,
+}
+
+
+def rendre_system(criteres: CriteresCiblage, client_nom: str | None = None) -> str:
+    """Rend le prompt système depuis l'ICP du client. À rendre UNE FOIS par campagne
+    (candidat au cache), réutilisé pour chaque prospect. Aucune valeur métier codée
+    en dur — tout vient de `criteres` (règle #3)."""
+    return _JINJA_ENV.get_template("scorer_system.txt.j2").render(
+        client_nom=client_nom,
+        description_icp=criteres.description_icp,
+        codes_naf=criteres.codes_naf,
+        effectif_min=criteres.effectif_min,
+        effectif_max=criteres.effectif_max,
+        mots_cles_positifs=criteres.mots_cles_positifs,
+        mots_cles_negatifs=criteres.mots_cles_negatifs,
+    )
+
+
+def rendre_user(prospect: Prospect, mots_cles_detectes: list[str] | None = None) -> str:
+    """Rend le prompt utilisateur pour un prospect donné (par prospect)."""
+    return _JINJA_ENV.get_template("scorer_user.txt.j2").render(
+        nom_entreprise=prospect.nom_entreprise,
+        siret=prospect.siret,
+        code_naf=prospect.code_naf,
+        libelle_naf=prospect.libelle_naf,
+        effectif_estime=prospect.effectif_estime,
+        ville=prospect.ville,
+        departement=prospect.departement,
+        site_web=prospect.site_web,
+        mots_cles_detectes=mots_cles_detectes or [],
+    )
+
+
+def _fallback_llm(score_regles: int, raison: str) -> dict:
+    """Repli déterministe quand Claude est indisponible ou sa réponse inexploitable :
+    le score LLM emprunte le score règles (comportement prévu par docs/SCORING.md)."""
+    return {
+        "score": max(0, min(100, int(score_regles))),
+        "justification": f"Repli sur le score règles ({raison}).",
+        "signaux_positifs": [],
+        "signaux_negatifs": [],
+        "priorite": "moyenne",
+    }
+
+
+async def _score_llm(
+    client: anthropic.AsyncAnthropic,
+    system_rendu: str,
+    user_rendu: str,
+    score_regles_fallback: int,
+) -> dict:
+    """Score LLM 0-100 + justification/signaux/priorité via Claude (sortie structurée).
+
+    Renvoie un dict `{score, justification, signaux_positifs, signaux_negatifs,
+    priorite}`. En cas d'indisponibilité de l'API (ou de réponse inexploitable),
+    repli sur le score règles. Le mapping vers `ScoreResult` (`score` -> `score_llm`,
+    `justification` -> `justification_llm`) est fait à l'agrégation (#27).
+    """
+    settings = get_settings()
+    try:
+        resp = await client.messages.create(
+            model=settings.claude_scoring_model,        # jamais codé en dur (règle #6)
+            max_tokens=400,
+            system=[{                                    # rendu 1×/campagne, candidat au cache
+                "type": "text",
+                "text": system_rendu,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            messages=[{"role": "user", "content": user_rendu}],
+            output_config={"format": {"type": "json_schema", "schema": _SCORE_SCHEMA}},
+            # ⚠️ NI effort, NI temperature, NI thinking (agnostique du modèle — cf. en-tête).
+        )
+        texte = next(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        data = json.loads(texte)
+    except anthropic.APIError as exc:                    # rate-limit / status / connexion
+        logger.warning("Scoring LLM indisponible (%s) — repli sur le score règles.", exc)
+        return _fallback_llm(score_regles_fallback, "Claude indisponible")
+    except (StopIteration, ValueError, TypeError) as exc:  # JSON tronqué / bloc texte absent
+        logger.warning("Réponse LLM inexploitable (%s) — repli sur le score règles.", exc)
+        return _fallback_llm(score_regles_fallback, "réponse LLM inexploitable")
+
+    return {
+        "score": max(0, min(100, int(data.get("score", score_regles_fallback)))),
+        "justification": str(data.get("justification", "")),
+        "signaux_positifs": list(data.get("signaux_positifs", [])),
+        "signaux_negatifs": list(data.get("signaux_negatifs", [])),
+        "priorite": data.get("priorite", "moyenne"),
+    }
 
 
 # --- Couche 3 : similarité embeddings ICP (#26) -----------------------------

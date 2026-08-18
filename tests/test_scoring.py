@@ -5,16 +5,24 @@ Couche règles (#24) : sous-scorers (`_score_effectif`, `_score_anciennete`,
 ancienneté, présence, géo, mots-clés, pénalités, exclusion #4, plafond 0-100).
 Couche embeddings (#26) : `_cosinus` (Python pur) + `_score_embedding` (Ollama et
 Qdrant mockés — aucun réseau ; cosinus borné 0-1, ICP absent → 0.0, upsert
-conditionnel au `prospect_id`). Valeurs métier depuis `CriteresCiblage` (règle #3).
+conditionnel au `prospect_id`).
+Couche LLM (#25) : rendu des prompts Jinja depuis l'ICP (`rendre_system`/`rendre_user`)
++ `_score_llm` (client Anthropic FAUX — aucun réseau) : sortie structurée, requête
+agnostique du modèle (ni effort/temperature/thinking), bornage 0-100, repli sur le
+score règles. Valeurs métier depuis `CriteresCiblage` (règle #3).
 """
 from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import math
 import uuid
 from datetime import date, timedelta
+from types import SimpleNamespace
 
+import anthropic
+import httpx
 import pytest
 
 from agents import scoring_agent as sa   # pour monkeypatcher get_embedding / upsert
@@ -23,9 +31,13 @@ from agents.scoring_agent import (
     _score_anciennete,
     _score_effectif,
     _score_embedding,
+    _score_llm,
     _score_mots_cles_positifs,
     _score_regles,
+    rendre_system,
+    rendre_user,
 )
+from config.settings import get_settings
 from models.criteres import CriteresCiblage
 from models.prospect import Prospect
 
@@ -345,3 +357,127 @@ def test_score_embedding_texte_reprend_les_champs(monkeypatch):
 
     for attendu in ("Garage Martin", "Réparation auto", "Paris", "75", "8"):
         assert attendu in vu["text"]
+
+
+# --- Couche 2 : rendu des prompts Jinja depuis l'ICP (#25) ------------------
+def test_rendre_system_reprend_l_icp():
+    crit = _criteres(
+        description_icp="Garages automobiles indépendants",
+        codes_naf=["4520Z"], effectif_min=2, effectif_max=15,
+        mots_cles_positifs=["carrosserie"], mots_cles_negatifs=["norauto"],
+    )
+    s = rendre_system(crit, client_nom="AssurPro")
+    for attendu in ("AssurPro", "Garages automobiles indépendants", "4520Z",
+                    "carrosserie", "norauto"):
+        assert attendu in s
+    assert "JSON" in s   # contrat de sortie présent
+
+
+def test_rendre_system_defaut_sans_client_ni_valeurs():
+    s = rendre_system(_criteres(), client_nom=None)
+    assert "None" not in s              # default(..., true) évite le rendu littéral de None
+    assert "(non renseigné)" in s
+
+
+def test_rendre_user_reprend_le_prospect():
+    p = _p(nom="Garage Martin", code_naf="4520Z", libelle_naf="Réparation auto",
+           effectif_estime=8, ville="Paris", departement="75", site_web="https://x.fr")
+    u = rendre_user(p, mots_cles_detectes=["diagnostic"])
+    for attendu in ("Garage Martin", "4520Z", "Réparation auto", "8", "Paris",
+                    "75", "diagnostic"):
+        assert attendu in u
+
+
+def test_rendre_user_champs_absents_pas_de_None():
+    u = rendre_user(_p())               # la plupart des champs à None
+    assert "None" not in u
+
+
+# --- Couche 2 : _score_llm (client Anthropic FAUX — aucun réseau) -----------
+class _FakeMessages:
+    def __init__(self, resp=None, exc=None):
+        self._resp, self._exc = resp, exc
+        self.calls: list[dict] = []
+
+    async def create(self, **kwargs):
+        self.calls.append(kwargs)
+        if self._exc is not None:
+            raise self._exc
+        return self._resp
+
+
+class _FakeClient:
+    """Imite anthropic.AsyncAnthropic pour _score_llm — pas de réseau, pas de clé."""
+    def __init__(self, resp=None, exc=None):
+        self.messages = _FakeMessages(resp, exc)
+
+
+def _resp_json(payload: dict) -> SimpleNamespace:
+    bloc = SimpleNamespace(type="text", text=json.dumps(payload))
+    return SimpleNamespace(content=[bloc])
+
+
+_PAYLOAD_OK = {
+    "score": 72,
+    "justification": "Bonne adéquation avec l'ICP : activité et taille cohérentes.",
+    "signaux_positifs": ["carrosserie", "avis google"],
+    "signaux_negatifs": [],
+    "priorite": "haute",
+}
+
+
+def test_score_llm_parse_sortie_structuree():
+    client = _FakeClient(resp=_resp_json(_PAYLOAD_OK))
+    r = asyncio.run(_score_llm(client, "sys", "usr", score_regles_fallback=50))
+    assert r["score"] == 72
+    assert r["priorite"] == "haute"
+    assert r["signaux_positifs"] == ["carrosserie", "avis google"]
+    assert "adéquation" in r["justification"]
+
+
+def test_score_llm_requete_agnostique_du_modele():
+    """La requête utilise le modèle configuré + sortie structurée + cache, et n'inclut
+    NI temperature/top_p NI effort/thinking (contrat multi-modèle Haiku↔Sonnet)."""
+    client = _FakeClient(resp=_resp_json(_PAYLOAD_OK))
+    asyncio.run(_score_llm(client, "SYS", "USR", score_regles_fallback=50))
+    kw = client.messages.calls[0]
+    assert kw["model"] == get_settings().claude_scoring_model
+    assert kw["output_config"]["format"]["type"] == "json_schema"
+    assert kw["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert kw["system"][0]["text"] == "SYS"
+    assert "temperature" not in kw
+    assert "top_p" not in kw
+    assert "thinking" not in kw
+    assert "effort" not in kw.get("output_config", {})
+
+
+def test_score_llm_borne_le_score():
+    haut = _FakeClient(resp=_resp_json({**_PAYLOAD_OK, "score": 150}))
+    bas = _FakeClient(resp=_resp_json({**_PAYLOAD_OK, "score": -10}))
+    assert asyncio.run(_score_llm(haut, "s", "u", 50))["score"] == 100
+    assert asyncio.run(_score_llm(bas, "s", "u", 50))["score"] == 0
+
+
+def test_score_llm_repli_sur_erreur_api():
+    exc = anthropic.APIConnectionError(
+        request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    )
+    client = _FakeClient(exc=exc)
+    r = asyncio.run(_score_llm(client, "s", "u", score_regles_fallback=63))
+    assert r["score"] == 63
+    assert r["priorite"] == "moyenne"
+    assert "Repli" in r["justification"]
+
+
+def test_score_llm_repli_sur_json_invalide():
+    resp = SimpleNamespace(content=[SimpleNamespace(type="text", text="pas du json")])
+    client = _FakeClient(resp=resp)
+    r = asyncio.run(_score_llm(client, "s", "u", score_regles_fallback=41))
+    assert r["score"] == 41
+    assert "Repli" in r["justification"]
+
+
+def test_score_llm_repli_sans_bloc_texte():
+    client = _FakeClient(resp=SimpleNamespace(content=[]))   # next(...) -> StopIteration
+    r = asyncio.run(_score_llm(client, "s", "u", score_regles_fallback=55))
+    assert r["score"] == 55
