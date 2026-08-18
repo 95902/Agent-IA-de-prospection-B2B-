@@ -51,7 +51,7 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
 
     Returns:
         `etat` enrichi avec `client_id`, `criteres` (CriteresCiblage),
-        `icp_embedding` (str qdrant_point_id ou None), `config_scoring` (dict).
+        `icp_embedding` (**vecteur** `list[float]` de l'ICP, ou None), `config_scoring`.
     """
     campagne_id_raw = etat.get("campagne_id")
     if not campagne_id_raw:
@@ -140,9 +140,6 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
 
         # 4. qdrant_point_id de l'ICP (peut être None si #12 non exécuté).
         qdrant_point_id = campagne_row["qdrant_point_id"]
-        icp_embedding_ref: str | None = (
-            str(qdrant_point_id) if qdrant_point_id is not None else None
-        )
 
     # NOTE : on n'appelle PAS `db.close()` ici. Le pool PG et le client Qdrant
     # sont des singletons (utils.db) partagés par tous les nodes du graphe (#28)
@@ -151,11 +148,20 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
     # ressort de l'orchestrateur (run/main.py) en fin de graphe — pas d'un node.
     # `scripts/init_icp.py` ferme son pool car il est standalone (hors graphe).
 
+    # 4b. Résolution du VECTEUR ICP (Qdrant), hors connexion PG. `EtatAgent.
+    # icp_embedding` est typé `list[float]` : le scoring embeddings (#26) attend le
+    # VECTEUR, pas le point_id. On le résout via `get_icp_embedding(point_id)`.
+    # None si l'ICP n'est pas encore embarqué (#12 non exécuté) ou si le point est
+    # absent de Qdrant → la couche embeddings reste neutre (0.0), pas de plantage.
+    icp_embedding: list[float] | None = None
+    if qdrant_point_id is not None:
+        icp_embedding = await db.get_icp_embedding(str(qdrant_point_id))
+
     # 5. Peuplement de l'état partagé (consommé par les nodes suivants).
     etat["campagne_id"] = str(campagne_uuid)
     etat["client_id"] = str(campagne_row["client_id"])
     etat["criteres"] = critere
-    etat["icp_embedding"] = icp_embedding_ref
+    etat["icp_embedding"] = icp_embedding
     etat["config_scoring"] = dict(campagne_row["config_scoring"] or {})
     return etat
 
