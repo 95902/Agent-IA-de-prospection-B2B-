@@ -1,8 +1,8 @@
 """Agent de scoring hybride 3 couches (règles + Claude + embeddings).
 
-Issue #11 — squelette. **Couche 1 (règles métier, #24) et couche 3 (embeddings,
-#26) implémentées ci-dessous.** La couche 2 (LLM Claude, #25), l'agrégation/
-persistance (#27) et l'assemblage dans le graphe (`scoring_node`, #28) suivent.
+Issue #11 — squelette. **Les 3 couches (règles #24, LLM #25, embeddings #26) et
+l'agrégation/persistance (#27) sont implémentées ci-dessous.** Seul l'assemblage
+dans le graphe (`scoring_node`, #28) reste à câbler.
 
 Rappels (CLAUDE.md règles #3/#4/#5/#6) :
 - **Aucune valeur métier codée en dur** : NAF, effectif, mots-clés viennent tous de
@@ -29,7 +29,8 @@ from agents.nettoyage_agent import _matche_exclusion
 from config.settings import get_settings
 from models.criteres import CriteresCiblage
 from models.prospect import Prospect
-from utils.db import upsert_prospect_embedding
+from models.score import ScoreResult
+from utils.db import save_score, upsert_prospect_embedding
 from utils.embeddings import get_embedding
 
 logger = logging.getLogger(__name__)
@@ -307,8 +308,111 @@ async def _score_embedding(
     return cosinus
 
 
+# --- Agrégation + persistance (#27) -----------------------------------------
+# Combine les 3 couches en un score final pondéré (poids PAR CAMPAGNE), en déduit
+# le statut, et historise via `save_score`. Le calcul est pur et testable hors ligne.
+
+# Poids par défaut = ceux du DEFAULT SQL de `campagnes.config_scoring`. Utilisés
+# seulement en repli quand la campagne n'a pas (ou plus) de config — jamais une
+# valeur métier codée en dur (règle #2) : la config campagne prime toujours.
+_POIDS_DEFAUT = {"poids_regles": 0.35, "poids_llm": 0.45, "poids_embedding": 0.20}
+
+# Seuils de statut (SCORING.md, critère d'acceptance #27) — respectés à l'unité près.
+_SEUIL_QUALIFIE = 60
+_SEUIL_INVALIDE = 30
+
+
+def _statut_pour_score(score_final: int) -> str:
+    """`qualifie` si ≥ 60, `invalide` si < 30, `nouveau` sinon (bornes exactes)."""
+    if score_final >= _SEUIL_QUALIFIE:
+        return "qualifie"
+    if score_final < _SEUIL_INVALIDE:
+        return "invalide"
+    return "nouveau"
+
+
+def _agreger(
+    score_regles: int,
+    score_llm: int,
+    score_embedding: float,
+    poids: dict | None = None,
+) -> tuple[int, str]:
+    """Score final 0-100 + statut, à partir des 3 sous-scores. Pur, déterministe.
+
+    `score_regles`/`score_llm` sont déjà sur 0-100 ; `score_embedding` est un COSINUS
+    0-1 (cf. `ScoreResult.score_embedding`) — le ×100 n'a lieu QUE dans cette somme
+    pondérée, jamais dans ce qui est persisté en base. Poids manquants → repli sur
+    `_POIDS_DEFAUT`, clé par clé (une config partielle reste valide)."""
+    p = poids or {}
+    w_regles = p.get("poids_regles", _POIDS_DEFAUT["poids_regles"])
+    w_llm = p.get("poids_llm", _POIDS_DEFAUT["poids_llm"])
+    w_embedding = p.get("poids_embedding", _POIDS_DEFAUT["poids_embedding"])
+
+    brut = w_regles * score_regles + w_llm * score_llm + w_embedding * (score_embedding * 100)
+    score_final = max(0, min(100, round(brut)))
+    return score_final, _statut_pour_score(score_final)
+
+
+async def agreger_et_sauvegarder(
+    prospect_id: str,
+    score_regles: int,
+    llm: dict,
+    score_embedding: float,
+    config_scoring: dict | None = None,
+    *,
+    prompt_version: str | None = None,
+    modele_llm: str | None = None,
+) -> ScoreResult:
+    """Agrège les 3 couches, persiste (historique `scores` + scores/statut courants
+    du prospect + compteur qualifiés), et renvoie le `ScoreResult`.
+
+    `llm` = dict renvoyé par `_score_llm` (`score`, `justification`, `signaux_*`,
+    `priorite`). `config_scoring` = poids PAR CAMPAGNE, déjà chargés dans
+    `EtatAgent["config_scoring"]` par `init_campagne` (#16) depuis
+    `campagnes.config_scoring` — passés ici par le node (#28), pas re-lus en base ;
+    repli sur `_POIDS_DEFAUT` si None/incomplet. NB : le vecteur du prospect est déjà
+    persisté dans Qdrant par `_score_embedding` (#26) — pas de `qdrant_client` ici
+    (contrairement au brouillon de l'issue). `save_score` pose le `statut` et
+    incrémente `prospects_qualifies` (garde de transition)."""
+    poids = config_scoring
+    score_llm = llm["score"]
+    score_final, statut = _agreger(score_regles, score_llm, score_embedding, poids)
+
+    resultat = ScoreResult(
+        score_regles=score_regles,
+        score_llm=score_llm,
+        score_embedding=score_embedding,
+        score_final=score_final,
+        justification_llm=llm.get("justification", ""),
+        signaux_positifs=list(llm.get("signaux_positifs", [])),
+        signaux_negatifs=list(llm.get("signaux_negatifs", [])),
+        priorite=llm.get("priorite", "moyenne"),
+    )
+
+    await save_score(
+        prospect_id,
+        {
+            "score_regles": score_regles,
+            "score_llm": score_llm,
+            "score_embedding": score_embedding,  # cosinus 0-1 — JAMAIS ×100 en base
+            "score_final": score_final,
+            "statut": statut,
+            "justification_llm": resultat.justification_llm,
+            "prompt_version": prompt_version,
+            "modele_llm": modele_llm,
+            "details": {
+                "signaux_positifs": resultat.signaux_positifs,
+                "signaux_negatifs": resultat.signaux_negatifs,
+                "priorite": resultat.priorite,
+                "poids": poids or _POIDS_DEFAUT,
+            },
+        },
+    )
+    return resultat
+
+
 # --- Node d'assemblage (#28) — stub -----------------------------------------
 async def scoring_node(state: dict) -> dict:
-    """STUB — node de scoring hybride. Couches 2/3 + agrégation + câblage à venir
-    (#25, #26, #27, #28). La couche règles ci-dessus est prête et testée (#24)."""
+    """STUB — node de scoring hybride. Couches + agrégation prêtes ; l'assemblage
+    dans le graphe (câblage `_score_*` → `agreger_et_sauvegarder`) reste #28."""
     raise NotImplementedError("scoring_node non assemblé — voir #28.")

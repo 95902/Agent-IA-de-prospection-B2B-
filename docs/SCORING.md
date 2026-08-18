@@ -397,61 +397,69 @@ osm_tags        = ['shop=car_repair']
 Fichier : `agents/scoring_agent.py` → agrégation dans le node, puis `utils.db.save_score`.
 
 ```python
-from config.settings import get_settings
 from models.score import ScoreResult
 
+# Repli seulement : la config campagne (state["config_scoring"]) prime toujours.
+_POIDS_DEFAUT = {"poids_regles": 0.35, "poids_llm": 0.45, "poids_embedding": 0.20}
 
-def _statut(score_final: int) -> str:
+
+def _statut_pour_score(score_final: int) -> str:
     return "qualifie" if score_final >= 60 else "invalide" if score_final < 30 else "nouveau"
 
 
-async def agreger_et_sauvegarder(prospect_id: str, result: ScoreResult,
-                                 config_scoring: dict | None) -> str:
-    cfg = config_scoring or {}
-    w_r = cfg.get("poids_regles", 0.35)
-    w_l = cfg.get("poids_llm", 0.45)
-    w_e = cfg.get("poids_embedding", 0.20)
-
+def _agreger(score_regles: int, score_llm: int, score_embedding: float,
+             poids: dict | None = None) -> tuple[int, str]:
+    p = poids or {}
+    w_r = p.get("poids_regles", 0.35)
+    w_l = p.get("poids_llm", 0.45)
+    w_e = p.get("poids_embedding", 0.20)
     score_final = round(
-        w_r * result.score_regles
-        + w_l * result.score_llm
-        + w_e * (result.score_embedding * 100)   # ⟳ ×100 ICI seulement (cosinus 0-1 → 0-100)
+        w_r * score_regles + w_l * score_llm + w_e * (score_embedding * 100)  # ×100 ICI seulement
     )
     score_final = max(0, min(100, score_final))
-    statut = _statut(score_final)
+    return score_final, _statut_pour_score(score_final)
 
-    settings = get_settings()
+
+async def agreger_et_sauvegarder(prospect_id: str, score_regles: int, llm: dict,
+                                 score_embedding: float, config_scoring: dict | None = None,
+                                 *, prompt_version: str | None = None,
+                                 modele_llm: str | None = None) -> ScoreResult:
+    # config_scoring vient de state["config_scoring"] (chargé 1×/campagne par #16) —
+    # passé par le node #28, PAS relu en base par prospect.
+    score_final, statut = _agreger(score_regles, llm["score"], score_embedding, config_scoring)
+    resultat = ScoreResult(
+        score_regles=score_regles, score_llm=llm["score"], score_embedding=score_embedding,
+        score_final=score_final, justification_llm=llm.get("justification", ""),
+        signaux_positifs=list(llm.get("signaux_positifs", [])),
+        signaux_negatifs=list(llm.get("signaux_negatifs", [])),
+        priorite=llm.get("priorite", "moyenne"),
+    )
     await save_score(prospect_id, {
-        "score_regles": result.score_regles,
-        "score_llm": result.score_llm,
-        "score_embedding": result.score_embedding,   # cosinus 0-1 (colonne dédiée)
-        "score_final": score_final,
-        "justification_llm": result.justification_llm,
-        "prompt_version": "v2.0-generique",
-        "modele_llm": settings.claude_scoring_model,  # ⟳ colonne `scores.modele_llm`
-        "details": {                                  # ⟳ colonne `scores.details` (JSONB)
-            "signaux_positifs": result.signaux_positifs,
-            "signaux_negatifs": result.signaux_negatifs,
-            "priorite": result.priorite,
-            "statut": statut,
-        },
+        "score_regles": score_regles, "score_llm": llm["score"],
+        "score_embedding": score_embedding,   # cosinus 0-1 (colonne dédiée — jamais ×100)
+        "score_final": score_final, "statut": statut,
+        "justification_llm": resultat.justification_llm,
+        "prompt_version": prompt_version, "modele_llm": modele_llm,
+        "details": {"signaux_positifs": resultat.signaux_positifs,
+                    "signaux_negatifs": resultat.signaux_negatifs,
+                    "priorite": resultat.priorite, "poids": config_scoring or _POIDS_DEFAUT},
     })
-    return statut
+    return resultat
 ```
 
-> **⟳ dérive corrigée — fonctions inexistantes.** `update_prospect_score(...)` et
-> `increment_campagne_kpi(...)` **n'existent pas** dans `utils/db.py`. À la place :
+> **Livré en #27.** `update_prospect_score(...)` / `increment_campagne_kpi(...)` n'existent
+> toujours pas — tout passe par `save_score` :
 >
 > - **`save_score(prospect_id, score_data)`** insère dans `scores` **ET** met à jour
 >   `prospects.score_{regles,llm,embedding,final}` dans une transaction. Champs acceptés :
->   `score_regles, score_llm, score_embedding, score_final, justification_llm,
+>   `score_regles, score_llm, score_embedding, score_final, statut, justification_llm,
 >   prompt_version, modele_llm, details`.
-> - **⚠️ `save_score` ne pose PAS le `statut`** aujourd'hui (l'UPDATE ne touche que les
->   `score_*`). **À étendre en #27** : ajouter un paramètre `statut` et la colonne à l'UPDATE
->   `prospects` (ou faire un UPDATE séparé). En attendant, le `statut` est transporté dans
->   `details` (traçabilité) et renvoyé par la fonction.
-> - Le compteur de qualifiés vit dans `state["qualifies"]` (incrémenté dans le node) — il n'y
->   a **pas** d'`increment_campagne_kpi`.
+> - ✅ **`save_score` pose désormais le `statut`** (`COALESCE`) **et incrémente
+>   `campagnes.prospects_qualifies`** — mais UNIQUEMENT sur une transition vers `qualifie`
+>   (ancien statut ≠ 'qualifie', ligne verrouillée `FOR UPDATE`) : l'historique `scores`
+>   autorise les re-scorings, un simple +1 par scoring double-compterait.
+> - Le compteur DB `campagnes.prospects_qualifies` est distinct du compteur in-run
+>   `state["qualifies"]` (incrémenté par le node #28) ; il n'y a pas d'`increment_campagne_kpi`.
 
 ---
 

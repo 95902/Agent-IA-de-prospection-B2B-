@@ -481,3 +481,117 @@ def test_score_llm_repli_sans_bloc_texte():
     client = _FakeClient(resp=SimpleNamespace(content=[]))   # next(...) -> StopIteration
     r = asyncio.run(_score_llm(client, "s", "u", score_regles_fallback=55))
     assert r["score"] == 55
+
+
+# --- Agrégation (#27) : _statut_pour_score / _agreger (purs) -----------------
+
+@pytest.mark.parametrize(
+    "score_final, attendu",
+    [
+        (100, "qualifie"),
+        (60, "qualifie"),   # borne exacte ≥ 60
+        (59, "nouveau"),
+        (30, "nouveau"),    # borne exacte : 30 n'est PAS invalide
+        (29, "invalide"),   # < 30
+        (0, "invalide"),
+    ],
+)
+def test_statut_pour_score_seuils_exacts(score_final, attendu):
+    assert sa._statut_pour_score(score_final) == attendu
+
+
+def test_agreger_poids_defaut_combinaison_connue():
+    # 0.35*60 + 0.45*80 + 0.20*(0.5*100) = 21 + 36 + 10 = 67
+    assert sa._agreger(60, 80, 0.5) == (67, "qualifie")
+
+
+def test_agreger_embedding_x100_pas_x1():
+    # score_embedding est un cosinus 0-1 ; il DOIT compter ×100 dans la somme.
+    # emb=1.0 seul (poids défaut 0.20) => contribue 20 pts, pas 0.2.
+    assert sa._agreger(0, 0, 1.0) == (20, "invalide")
+    assert sa._agreger(0, 0, 0.0) == (0, "invalide")
+
+
+def test_agreger_borne_haute_a_100():
+    # Poids volontairement > 1 au total => brut dépasse 100 => clampé à 100.
+    poids = {"poids_regles": 1.0, "poids_llm": 1.0, "poids_embedding": 1.0}
+    assert sa._agreger(100, 100, 1.0, poids) == (100, "qualifie")
+
+
+def test_agreger_poids_campagne_priment():
+    # Config campagne 100% règles : seul score_regles compte.
+    poids = {"poids_regles": 1.0, "poids_llm": 0.0, "poids_embedding": 0.0}
+    assert sa._agreger(90, 10, 0.1, poids) == (90, "qualifie")
+
+
+def test_agreger_poids_partiel_repli_par_cle():
+    # Config incomplète (llm seul) : regles/embedding retombent sur le défaut.
+    # 0.35*40 + 1.0*0 + 0.20*(1.0*100) = 14 + 0 + 20 = 34 -> nouveau
+    assert sa._agreger(40, 0, 1.0, {"poids_llm": 1.0}) == (34, "nouveau")
+
+
+def test_agreger_dict_vide_equivaut_au_defaut():
+    assert sa._agreger(60, 80, 0.5, {}) == sa._agreger(60, 80, 0.5, None)
+
+
+# --- Agrégation (#27) : agreger_et_sauvegarder (I/O monkeypatchées) ----------
+
+def _fake_llm(score=88):
+    return {
+        "score": score,
+        "justification": "match ICP",
+        "signaux_positifs": ["site web"],
+        "signaux_negatifs": [],
+        "priorite": "haute",
+    }
+
+
+def _patch_save(monkeypatch):
+    """Monkeypatch save_score (capture le score_data). `config_scoring` est un
+    paramètre (issu de `state`), plus une lecture BDD — rien d'autre à patcher."""
+    capture = {}
+
+    async def _fake_save(prospect_id, score_data):
+        capture["prospect_id"] = prospect_id
+        capture["score_data"] = score_data
+
+    monkeypatch.setattr(sa, "save_score", _fake_save)
+    return capture
+
+
+def test_agreger_et_sauvegarder_persiste_et_mappe(monkeypatch):
+    cap = _patch_save(monkeypatch)
+    res = asyncio.run(
+        sa.agreger_et_sauvegarder(
+            "pid-1", score_regles=90, llm=_fake_llm(10), score_embedding=0.9,
+            config_scoring={"poids_regles": 1.0, "poids_llm": 0.0, "poids_embedding": 0.0},
+            prompt_version="v1", modele_llm="claude-haiku-4-5",
+        )
+    )
+    # 100% règles -> score_final = 90 -> qualifie ; sortie LLM mappée dans ScoreResult.
+    assert (res.score_final, res.score_regles, res.score_llm) == (90, 90, 10)
+    assert res.priorite == "haute" and res.signaux_positifs == ["site web"]
+
+    sd = cap["score_data"]
+    assert cap["prospect_id"] == "pid-1"
+    assert sd["statut"] == "qualifie"
+    assert sd["score_final"] == 90
+    assert sd["modele_llm"] == "claude-haiku-4-5" and sd["prompt_version"] == "v1"
+    # signaux + priorité + poids historisés dans details (audit #32).
+    assert sd["details"]["priorite"] == "haute"
+    assert sd["details"]["poids"] == {"poids_regles": 1.0, "poids_llm": 0.0, "poids_embedding": 0.0}
+
+
+def test_agreger_et_sauvegarder_embedding_reste_cosinus(monkeypatch):
+    # Le ×100 ne doit vivre QUE dans score_final, jamais dans la colonne score_embedding.
+    cap = _patch_save(monkeypatch)
+    res = asyncio.run(
+        sa.agreger_et_sauvegarder(  # config_scoring omis -> None -> poids par défaut
+            "pid-2", score_regles=0, llm=_fake_llm(0), score_embedding=0.5
+        )
+    )
+    sd = cap["score_data"]
+    assert sd["score_embedding"] == 0.5          # cosinus brut 0-1 persisté
+    assert res.score_embedding == 0.5
+    # 0.20 * (0.5*100) = 10 -> score_final 10, statut invalide (poids défaut, repli None).
+    assert sd["score_final"] == 10 and sd["statut"] == "invalide"
