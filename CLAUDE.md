@@ -55,6 +55,7 @@ Durée   : 9 semaines MVP
 | Une issue spécifique (Sprint 0 à Sprint 4, 41 issues au total sur GitHub) | `docs/ISSUES.md` |
 | Les règles légales (RGPD) | `docs/LEGAL.md` |
 | Le produit, les user stories, les KPIs | `docs/PRD.md` |
+| **Vérifier ton travail / reprendre une session proprement** (garde-fous, boucle, handoff) | `docs/VERIFICATION.md` |
 
 ## Règles absolues — ne jamais ignorer
 
