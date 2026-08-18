@@ -26,6 +26,10 @@ anthropic>=0.40,<1.0
 # Rendu des prompts de scoring depuis l'ICP client (issue #25), jamais figé (règle #3).
 jinja2>=3.1,<4.0
 
+# Observabilité LLM (issue #30) — traces + coûts. Config via LANGCHAIN_* (utils/tracing).
+# Traçage effectif des appels Claude câblé à l'assemblage du graphe (#28).
+langsmith>=0.1,<1.0
+
 # --- Dev (tests) ---
 pytest>=8.0,<9.0
 pytest-asyncio>=0.23,<0.25
