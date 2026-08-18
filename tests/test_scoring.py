@@ -1,23 +1,28 @@
-"""Tests de la couche règles du scoring (#24) — purs, déterministes, hors ligne.
+"""Tests des couches de scoring — purs / mockés, déterministes, hors ligne.
 
-Couvre les sous-scorers (`_score_effectif`, `_score_anciennete`,
-`_score_mots_cles_positifs`) et le barème intégré `_score_regles` : crédit
-contact/effectif/ancienneté/présence/géo/mots-clés, pénalités (sans contact,
-NAF hors ICP), exclusion ICP forcée à 0 (règle #4), et le plafonnement 0-100.
-Toutes les valeurs métier viennent de `CriteresCiblage` (règle #3). Aucun réseau.
+Couche règles (#24) : sous-scorers (`_score_effectif`, `_score_anciennete`,
+`_score_mots_cles_positifs`) + barème intégré `_score_regles` (contact, effectif,
+ancienneté, présence, géo, mots-clés, pénalités, exclusion #4, plafond 0-100).
+Couche embeddings (#26) : `_cosinus` (Python pur) + `_score_embedding` (Ollama et
+Qdrant mockés — aucun réseau ; cosinus borné 0-1, ICP absent → 0.0, upsert
+conditionnel au `prospect_id`). Valeurs métier depuis `CriteresCiblage` (règle #3).
 """
 from __future__ import annotations
 
 import asyncio
 import inspect
+import math
 import uuid
 from datetime import date, timedelta
 
 import pytest
 
+from agents import scoring_agent as sa   # pour monkeypatcher get_embedding / upsert
 from agents.scoring_agent import (
+    _cosinus,
     _score_anciennete,
     _score_effectif,
+    _score_embedding,
     _score_mots_cles_positifs,
     _score_regles,
 )
@@ -225,3 +230,118 @@ def test_scoring_node_stub_raises_not_implemented() -> None:
 
     with pytest.raises(NotImplementedError):
         asyncio.run(scoring_node({"prospects": []}))
+
+
+# --- Couche 3 : cosinus pur (#26) -------------------------------------------
+def test_cosinus_vecteurs_identiques():
+    assert _cosinus([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(1.0)
+
+
+def test_cosinus_orthogonaux():
+    assert _cosinus([1.0, 0.0], [0.0, 1.0]) == 0.0
+
+
+def test_cosinus_opposes():
+    assert _cosinus([1.0, 0.0], [-1.0, 0.0]) == pytest.approx(-1.0)
+
+
+def test_cosinus_vecteur_nul_pas_de_division_par_zero():
+    assert _cosinus([0.0, 0.0, 0.0], [1.0, 2.0, 3.0]) == 0.0
+
+
+def test_cosinus_valeur_connue():
+    # angle 45° entre [1,1] et [1,0] -> cos = 1/sqrt(2)
+    assert _cosinus([1.0, 1.0], [1.0, 0.0]) == pytest.approx(1 / math.sqrt(2))
+
+
+# --- Couche 3 : _score_embedding (Ollama + Qdrant mockés) -------------------
+def test_score_embedding_icp_absent_court_circuite(monkeypatch):
+    """ICP non initialisé (None ou vide) → 0.0 sans appeler Ollama."""
+    appels = []
+
+    async def _fake_get(text):
+        appels.append(text)
+        return [1.0] * 4
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    assert asyncio.run(_score_embedding(_p(), None)) == 0.0
+    assert asyncio.run(_score_embedding(_p(), [])) == 0.0
+    assert appels == []   # aucun appel embedding (court-circuit)
+
+
+def test_score_embedding_retourne_cosinus_borne(monkeypatch):
+    """Cosinus 0-1 renvoyé (ici 1/sqrt(2) entre [1,1] et [1,0])."""
+    async def _fake_get(text):
+        return [1.0, 1.0]
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    assert asyncio.run(_score_embedding(_p(), [1.0, 0.0])) == pytest.approx(1 / math.sqrt(2))
+
+
+def test_score_embedding_cosinus_negatif_clampe_a_zero(monkeypatch):
+    """Un cosinus négatif est ramené à 0.0 (échelle [0, 1])."""
+    async def _fake_get(text):
+        return [-1.0, 0.0]
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    assert asyncio.run(_score_embedding(_p(), [1.0, 0.0])) == 0.0
+
+
+def test_score_embedding_upsert_avec_id_et_payload(monkeypatch):
+    """Avec un prospect_id : persistance Qdrant appelée avec le vecteur + payload indexable."""
+    recu = {}
+
+    async def _fake_get(text):
+        return [0.5, 0.5, 0.5, 0.5]
+
+    async def _fake_upsert(prospect_id, embedding, payload):
+        recu.update(id=prospect_id, embedding=embedding, payload=payload)
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    monkeypatch.setattr(sa, "upsert_prospect_embedding", _fake_upsert)
+
+    p = _p(nom="Garage Martin", code_naf="4520Z", departement="75")
+    asyncio.run(_score_embedding(p, [0.5, 0.5, 0.5, 0.5], prospect_id="uuid-bdd-123"))
+
+    assert recu["id"] == "uuid-bdd-123"
+    assert recu["embedding"] == [0.5, 0.5, 0.5, 0.5]
+    assert recu["payload"] == {
+        "campagne_id": str(CID),
+        "code_naf": "4520Z",
+        "departement": "75",
+        "nom_entreprise": "Garage Martin",
+    }
+
+
+def test_score_embedding_pas_d_upsert_sans_id(monkeypatch):
+    """Sans prospect_id : on calcule le cosinus mais on n'écrit rien dans Qdrant."""
+    a_ecrit = []
+
+    async def _fake_get(text):
+        return [1.0, 0.0]
+
+    async def _fake_upsert(prospect_id, embedding, payload):
+        a_ecrit.append(prospect_id)
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    monkeypatch.setattr(sa, "upsert_prospect_embedding", _fake_upsert)
+
+    asyncio.run(_score_embedding(_p(), [1.0, 0.0]))   # prospect_id=None
+    assert a_ecrit == []
+
+
+def test_score_embedding_texte_reprend_les_champs(monkeypatch):
+    """Le texte encodé reprend les champs discriminants du prospect."""
+    vu = {}
+
+    async def _fake_get(text):
+        vu["text"] = text
+        return [1.0, 0.0]
+
+    monkeypatch.setattr(sa, "get_embedding", _fake_get)
+    p = _p(nom="Garage Martin", libelle_naf="Réparation auto",
+           effectif_estime=8, ville="Paris", departement="75")
+    asyncio.run(_score_embedding(p, [1.0, 0.0]))
+
+    for attendu in ("Garage Martin", "Réparation auto", "Paris", "75", "8"):
+        assert attendu in vu["text"]
