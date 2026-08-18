@@ -12,11 +12,18 @@ Règle #8 : async partout (asyncpg via `utils.db`).
 """
 from __future__ import annotations
 
+import logging
 import uuid
 
+from agents.enrichissement_agent import enrichissement_node
+from agents.nettoyage_agent import nettoyage_node
+from agents.scoring_agent import scoring_node
+from agents.sirene_agent import sirene_node
 from graph.state import EtatAgent
 from models.criteres import CriteresCiblage
 from utils import db
+
+logger = logging.getLogger(__name__)
 
 
 # --- Exceptions (AC2 : erreurs explicites, fail fast) ----------------------
@@ -166,13 +173,53 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
     return etat
 
 
-# --- Assemblage du graphe (issue #28 — STUB) -------------------------------
+# --- Assemblage du pipeline (issue #28) ------------------------------------
 
-def build_graph():  # type: ignore[no-untyped-def]
-    """STUB — construit le StateGraph LangChain. À implémenter (#28)."""
-    raise NotImplementedError("graph/workflow.build_graph non implémenté — voir #28.")
+# Les 6 nodes dans l'ordre. Chaîne manuelle (pas de dépendance LangGraph — cf. #28
+# et la note de prep) : chaque node reste un `async (state) -> state`, contrat
+# compatible avec un futur `StateGraph` si on décide d'ajouter LangGraph.
+# `prerequis=True` : un échec rend la suite vide de sens (pas de contexte / pas de
+# prospects) → on stoppe proprement. Sinon on logge et on continue (pipeline partiel).
+_PIPELINE: tuple[tuple[str, object, bool], ...] = (
+    ("init_campagne", init_campagne, True),
+    ("fetch_sirene", sirene_node, True),
+    ("enrichir", enrichissement_node, False),
+    ("nettoyer", nettoyage_node, False),
+    ("scorer", scoring_node, False),
+)
+
+
+def build_graph() -> tuple[tuple[str, object, bool], ...]:
+    """Retourne la description ordonnée du pipeline (nodes async `(state) -> state`).
+
+    Chaîne manuelle, sans dépendance graphe. Point d'extension unique si l'équipe
+    ajoute LangGraph plus tard : mapper `_PIPELINE` sur un `StateGraph`. `run`
+    exécute cette description."""
+    return _PIPELINE
 
 
 async def run(state: EtatAgent) -> EtatAgent:
-    """STUB — exécute le graphe complet pour une campagne. À implémenter (#28/#29)."""
-    raise NotImplementedError("graph/workflow.run non implémenté — voir #28.")
+    """Exécute le pipeline complet pour une campagne, nodes en séquence (#28).
+
+    Gestion d'erreurs par node : chaque échec est loggé et poussé dans
+    `state["erreurs"]`. Un node **prérequis** en échec (`init_campagne`,
+    `fetch_sirene`) arrête le pipeline — inutile de continuer sans contexte ni
+    prospects. Les autres nodes n'arrêtent pas la campagne (résultat partiel > rien).
+    La panne Claude est absorbée dans `scoring_node` (repli règles), pas ici.
+
+    `state` doit contenir `campagne_id`. Retourne l'état final (avec `qualifies`,
+    `erreurs`). La fermeture du pool PG / client Qdrant est du ressort de
+    l'orchestrateur appelant (`main.py`, #29), pas de `run`."""
+    state.setdefault("erreurs", [])
+    state.setdefault("collectes", 0)
+    state.setdefault("qualifies", 0)
+    for nom, node, prerequis in _PIPELINE:
+        try:
+            state = await node(state)  # type: ignore[operator]
+        except Exception as exc:
+            logger.exception("Node '%s' en échec : %s", nom, exc)
+            state["erreurs"].append(f"{nom}:{exc}")
+            if prerequis:
+                logger.error("Node prérequis '%s' échoué — arrêt du pipeline.", nom)
+                break
+    return state
