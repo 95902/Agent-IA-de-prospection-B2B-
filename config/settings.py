@@ -69,6 +69,16 @@ class Settings(BaseSettings):
     # campagne — poser un budget en prod, cf. suivi de coûts #23).
     opposition_budget_credits: int | None = None
 
+    # ---------- LangSmith (traces + coûts LLM — #30) ----------
+    # Observabilité optionnelle, DÉSACTIVÉE par défaut. Convention LANGCHAIN_*
+    # (cf. .env.example) — acceptée par le SDK langsmith. Le traçage effectif des
+    # appels Claude est câblé à l'assemblage du graphe (#28) ; ici, seulement la
+    # config, propagée dans l'environnement par utils/tracing.configure_tracing().
+    langchain_tracing_v2: bool = False
+    langchain_api_key: str = ""
+    langchain_project: str = "prospection-b2b"
+    langchain_endpoint: str = ""  # vide = endpoint LangSmith cloud par défaut
+
     @property
     def postgres_dsn(self) -> str:
         return (
