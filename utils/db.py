@@ -150,7 +150,14 @@ async def upsert_prospect(data: dict) -> str:
 
 async def save_score(prospect_id: str, score_data: dict) -> None:
     """Historise un scoring (table `scores`) et met à jour les scores courants
-    du prospect, dans une même transaction."""
+    du prospect, dans une même transaction.
+
+    Si `score_data["statut"]` est fourni (agrégation #27), met aussi à jour
+    `prospects.statut` ET incrémente `campagnes.prospects_qualifies` — mais
+    UNIQUEMENT sur une transition vers `qualifie` (ancien statut ≠ 'qualifie').
+    L'historique `scores` autorise plusieurs scorings par prospect ; sans ce
+    garde de transition, un re-scoring double-compterait les qualifiés."""
+    statut = score_data.get("statut")
     pool = await get_pg_pool()
     async with pool.acquire() as conn, conn.transaction():
         await conn.execute(
@@ -170,13 +177,23 @@ async def save_score(prospect_id: str, score_data: dict) -> None:
             score_data.get("modele_llm"),
             score_data.get("details", {}),
         )
+        # Ancien statut + campagne (verrouillés) — lus AVANT l'UPDATE pour décider
+        # de la transition. Requête évitée dans le chemin historique sans statut.
+        ancien = None
+        if statut is not None:
+            ancien = await conn.fetchrow(
+                "SELECT statut, campagne_id FROM prospects WHERE id = $1 FOR UPDATE;",
+                prospect_id,
+            )
         await conn.execute(
             """
             UPDATE prospects SET
                 score_regles    = COALESCE($2, score_regles),
                 score_llm       = COALESCE($3, score_llm),
                 score_embedding = COALESCE($4, score_embedding),
-                score_final     = COALESCE($5, score_final)
+                score_final     = COALESCE($5, score_final),
+                statut          = COALESCE($6, statut),
+                updated_at      = NOW()
             WHERE id = $1;
             """,
             prospect_id,
@@ -184,7 +201,14 @@ async def save_score(prospect_id: str, score_data: dict) -> None:
             score_data.get("score_llm"),
             score_data.get("score_embedding"),
             score_data.get("score_final"),
+            statut,
         )
+        if statut == "qualifie" and ancien is not None and ancien["statut"] != "qualifie":
+            await conn.execute(
+                "UPDATE campagnes SET prospects_qualifies = prospects_qualifies + 1 "
+                "WHERE id = $1;",
+                ancien["campagne_id"],
+            )
 
 
 async def get_file_appel(limit: int = 100) -> list[dict]:
