@@ -3,7 +3,7 @@
 Couvre les 2 critères d'acceptance :
 - AC1 : `init_campagne` retourne un `EtatAgent` avec tous les critères de la
   campagne correctement chargés (codes NAF, départements, effectif min/max,
-  ancienneté min, mots-clés +/-, ICP embedding point id, config_scoring).
+  ancienneté min, mots-clés +/-, ICP embedding **vecteur** résolu, config_scoring).
 - AC2 : Erreur claire et explicite si la campagne ou ses critères n'existent pas
   (fail fast, pas de valeurs par défaut silencieuses).
 
@@ -189,7 +189,10 @@ async def test_ac1_unit_charge_tous_les_criteres() -> None:
 
     pool, conn = _make_pool_mock(campagne_row, critere, icp_point_id)
 
-    with patch("graph.workflow.db.get_pg_pool", new_callable=AsyncMock, return_value=pool):
+    fake_vecteur = [0.1, 0.2, 0.3]  # vecteur ICP résolu depuis Qdrant (mocké)
+    with patch("graph.workflow.db.get_pg_pool", new_callable=AsyncMock, return_value=pool), \
+         patch("graph.workflow.db.get_icp_embedding", new_callable=AsyncMock,
+               return_value=fake_vecteur) as mock_get_icp:
         etat = await init_campagne({"campagne_id": CAMPAGNE_ID})
 
     # EtatAgent peuplé correctement.
@@ -207,8 +210,9 @@ async def test_ac1_unit_charge_tous_les_criteres() -> None:
     assert crit.exiger_email is False
     assert crit.mots_cles_positifs == ["qualite", "service"]
     assert crit.mots_cles_negatifs == ["exclusion1", "exclusion2"]
-    # ICP embedding point id + config_scoring propagés.
-    assert etat["icp_embedding"] == icp_point_id or etat.get("icp_point_id") == icp_point_id
+    # ICP embedding : le VECTEUR est résolu depuis Qdrant via le qdrant_point_id.
+    mock_get_icp.assert_awaited_once_with(icp_point_id)
+    assert etat["icp_embedding"] == fake_vecteur
     assert etat["config_scoring"]["poids_llm"] == 0.45
 
 
@@ -228,10 +232,12 @@ async def test_ac1_unit_embedding_optionnel_si_pas_icp_profile() -> None:
 
     pool, _ = _make_pool_mock(campagne_row, critere, None)
 
-    with patch("graph.workflow.db.get_pg_pool", new_callable=AsyncMock, return_value=pool):
+    with patch("graph.workflow.db.get_pg_pool", new_callable=AsyncMock, return_value=pool), \
+         patch("graph.workflow.db.get_icp_embedding", new_callable=AsyncMock) as mock_get_icp:
         etat = await init_campagne({"campagne_id": CAMPAGNE_ID})
 
     assert etat["icp_embedding"] is None
+    mock_get_icp.assert_not_awaited()   # court-circuit : pas de point_id → pas d'appel Qdrant
     assert isinstance(etat["criteres"], CriteresCiblage)
 
 
