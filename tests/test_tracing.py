@@ -63,3 +63,35 @@ def test_endpoint_optionnel_non_pose_si_vide(monkeypatch):
     ))
     assert tracing.configure_tracing() is True
     assert "LANGCHAIN_ENDPOINT" not in os.environ
+
+
+# --- #30 : câblage effectif du traçage (décorateur + orchestrateur) ----------
+
+def test_score_llm_porte_traceable():
+    """L'appel Claude `_score_llm` est décoré `@traceable` (observabilité #30).
+
+    Import gardé : langsmith installé → le décorateur enrobe la fonction (attribut
+    `__wrapped__` posé par functools.wraps) ; absent → no-op, la fonction reste
+    appelable. Dans les deux cas `traceable` existe et `_score_llm` est callable."""
+    import agents.scoring_agent as sa
+    assert callable(sa.traceable)
+    assert callable(sa._score_llm)
+    try:
+        import langsmith  # noqa: F401
+    except ImportError:
+        return  # décorateur no-op : rien de plus à asserter
+    assert hasattr(sa._score_llm, "__wrapped__")
+
+
+def test_run_configure_le_tracage(monkeypatch):
+    """`graph.workflow.run` active le traçage au démarrage (#30) avant les nodes."""
+    import asyncio
+
+    from graph import workflow
+
+    appels: list[int] = []
+    monkeypatch.setattr(workflow, "configure_tracing", lambda: appels.append(1) or False)
+    # État vide : init_campagne (prérequis) lève faute de campagne_id → run stoppe.
+    # `configure_tracing` est appelé AVANT la boucle, donc bien enregistré.
+    asyncio.run(workflow.run({}))
+    assert appels, "run() doit appeler configure_tracing au démarrage"
