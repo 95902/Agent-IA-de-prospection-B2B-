@@ -87,6 +87,18 @@ def _score_mots_cles_positifs(prospect: Prospect, mots_cles: list[str] | None) -
     return min(hits * 5, 10)
 
 
+def _naf_sans_point(naf: str | None) -> str:
+    """Normalise un code NAF pour comparaison : sans point, en majuscules.
+
+    L'INSEE renvoie le code AVEC point (`45.20A`) — c'est la forme stockée dans
+    `prospect.code_naf` — tandis que `criteres_ciblage.codes_naf` le stocke SANS
+    point (`4520A`), cf. `sirene_agent._naf_avec_point` qui insère le point pour
+    interroger l'API. Sans cette normalisation, la comparaison NAF échouait
+    toujours (dotted ≠ dotless) et infligeait la pénalité -30 à TOUT prospect —
+    y compris ceux dont le NAF matche pourtant parfaitement l'ICP."""
+    return (naf or "").replace(".", "").upper()
+
+
 def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
     """Score règles 0-100, déterministe, entièrement paramétré par l'ICP client.
 
@@ -131,7 +143,9 @@ def _score_regles(prospect: Prospect, criteres: CriteresCiblage) -> int:
         return 0  # exclusion ICP (règle #4) — prime sur tout le reste
     if not prospect.telephone and not prospect.email:
         score -= 20
-    if criteres.codes_naf and prospect.code_naf not in criteres.codes_naf:
+    if criteres.codes_naf and _naf_sans_point(prospect.code_naf) not in {
+        _naf_sans_point(n) for n in criteres.codes_naf
+    }:
         score -= 30
 
     return max(0, min(100, score))
