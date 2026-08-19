@@ -258,3 +258,51 @@ async def test_tavily_resolver_extracts_when_domain_matches_name():
     assert contacts.emails == ["pro@garagex.fr"]           # essec.edu écarté
     assert contacts.site_web == "http://garagex.fr"
     assert contacts.phones                                 # tél de la page confirmée
+
+
+# --- Pré-passe OSM (#69) : câblée avant la cascade dans enrichissement_node ---
+
+@pytest.mark.asyncio
+async def test_node_osm_prepass_puis_cascade_sur_restants(monkeypatch):
+    """OSM (gratuit) tourne AVANT la cascade ; les prospects qu'OSM résout
+    totalement (tél + email) ne repassent PAS par la cascade payante."""
+    p_osm = _p()       # résolu par OSM -> exclu de la cascade
+    p_reste = _p()     # non résolu -> cascade
+    recu = {}
+
+    async def _fake_osm(prospects, osm_tags, client=None, settings=None):
+        recu["tags"] = osm_tags
+        p_osm.email = "jean@osm-garage.fr"     # OSM remplit tél + email
+        p_osm.telephone = "+33123456789"
+        return {"emails": 1, "telephones": 1}
+
+    vus = []
+
+    async def _resolver(prospect, client, settings, site_web, generic):
+        vus.append(prospect)
+        return None
+
+    monkeypatch.setattr(ea, "enrichir_par_osm", _fake_osm)
+    monkeypatch.setattr(ea, "RESOLVERS", [_resolver])
+
+    crit = CriteresCiblage(nom="x", osm_tags=["amenity=car_repair"])
+    await enrichissement_node({"prospects": [p_osm, p_reste], "criteres": crit}, batch_size=2)
+
+    assert recu["tags"] == ["amenity=car_repair"]   # pré-passe OSM appelée avec les tags ICP
+    assert vus == [p_reste]                          # cascade UNIQUEMENT sur le restant
+
+
+@pytest.mark.asyncio
+async def test_node_sans_osm_tags_pas_de_prepass(monkeypatch):
+    """ICP sans osm_tags -> pré-passe OSM court-circuitée (source inapplicable)."""
+    called = {"osm": False}
+
+    async def _fake_osm(*a, **k):
+        called["osm"] = True
+        return {}
+
+    monkeypatch.setattr(ea, "enrichir_par_osm", _fake_osm)
+    monkeypatch.setattr(ea, "RESOLVERS", [])   # cascade vide
+    crit = CriteresCiblage(nom="x")            # pas d'osm_tags
+    await enrichissement_node({"prospects": [_p()], "criteres": crit})
+    assert called["osm"] is False

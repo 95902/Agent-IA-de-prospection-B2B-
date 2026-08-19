@@ -77,6 +77,7 @@ def _fake_critere_row(*, critere_id: str = CRITERE_ID) -> dict:
         "exiger_email": False,
         "mots_cles_positifs": ["qualite", "service"],
         "mots_cles_negatifs": ["exclusion1", "exclusion2"],
+        "osm_tags": ["amenity=car_repair", "shop=car_repair"],
         "actif": True,
     }
 
@@ -210,6 +211,8 @@ async def test_ac1_unit_charge_tous_les_criteres() -> None:
     assert crit.exiger_email is False
     assert crit.mots_cles_positifs == ["qualite", "service"]
     assert crit.mots_cles_negatifs == ["exclusion1", "exclusion2"]
+    # osm_tags chargés depuis criteres_ciblage → alimentent la pré-passe OSM (#69).
+    assert crit.osm_tags == ["amenity=car_repair", "shop=car_repair"]
     # ICP embedding : le VECTEUR est résolu depuis Qdrant via le qdrant_point_id.
     mock_get_icp.assert_awaited_once_with(icp_point_id)
     assert etat["icp_embedding"] == fake_vecteur

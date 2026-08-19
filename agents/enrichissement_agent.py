@@ -49,6 +49,7 @@ from config.settings import Settings, get_settings
 from graph.state import EtatAgent
 from models.criteres import CriteresCiblage
 from models.prospect import Prospect, _clean_email, _normalize_phone
+from utils.osm import enrichir_par_osm
 
 logger = logging.getLogger(__name__)
 
@@ -380,21 +381,40 @@ async def _enrich_prospect(
 
 # --- Node -------------------------------------------------------------------
 async def enrichissement_node(state: EtatAgent, batch_size: int = BATCH_SIZE) -> EtatAgent:
-    """Enrichit `state['prospects']` en tél/email via la cascade. Batch parallèle."""
+    """Enrichit `state['prospects']` en tél/email. Pré-passe OSM géographique (#69,
+    gratuite) PUIS cascade par prospect pour les contacts encore manquants. Batch parallèle."""
     prospects: list[Prospect] = state.get("prospects", [])
     if not prospects:
         return state
     settings = get_settings()
+    criteres = state.get("criteres")
     semaphore = asyncio.Semaphore(batch_size)
     # Vocabulaire non discriminant de CETTE campagne, dérivé de l'ICP client.
-    generic = generic_tokens(state.get("criteres"))
+    generic = generic_tokens(criteres)
 
     async with httpx.AsyncClient(timeout=20.0) as client:
+        # Pré-passe OSM (#69) : source GRATUITE, une requête Overpass par zone. Remplit
+        # tél/email/site depuis OpenStreetMap AVANT la cascade payante. Inapplicable si
+        # l'ICP n'a pas d'`osm_tags` (no-op). Un échec OSM ne casse pas l'enrichissement.
+        osm_tags = list(getattr(criteres, "osm_tags", None) or [])
+        if osm_tags:
+            try:
+                stats = await enrichir_par_osm(
+                    prospects, osm_tags, client=client, settings=settings
+                )
+                logger.info("osm : %s", stats)
+            except Exception as exc:  # OSM KO -> la cascade prend le relais
+                logger.warning("osm pré-passe KO : %s", exc)
+
+        # Cascade (Tavily/Crawl4AI/DDG) UNIQUEMENT pour les prospects encore incomplets
+        # (tél OU email manquant) — OSM a pu tout résoudre : on économise les appels payants.
+        restants = [p for p in prospects if p.email is None or p.telephone is None]
+
         async def _one(prospect: Prospect) -> None:
             async with semaphore:
                 await _enrich_prospect(prospect, client, settings, generic)
 
-        await asyncio.gather(*(_one(p) for p in prospects))
+        await asyncio.gather(*(_one(p) for p in restants))
 
     with_email = sum(1 for p in prospects if p.email)
     with_phone = sum(1 for p in prospects if p.telephone)
