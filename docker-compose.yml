@@ -105,8 +105,12 @@ services:
     restart: unless-stopped
     profiles: ["dev"]
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@prospection.local}
+      # ⚠️ pgadmin4 récent REFUSE les domaines réservés (.local/.test/.example) au boot
+      # ("special-use or reserved name") → crash-loop. Défaut = TLD réel + on désactive
+      # le contrôle de délivrabilité (login local, aucun mail envoyé).
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@prospection-b2b.io}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme_pgadmin}
+      PGADMIN_CONFIG_CHECK_EMAIL_DELIVERABILITY: "False"
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     volumes:
