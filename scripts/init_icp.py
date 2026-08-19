@@ -234,9 +234,12 @@ async def _run(client_id_str: str) -> int:
                     """
                     UPDATE icp_profiles
                     SET qdrant_point_id = $2,
-                        embedding_version = $3,
-                        updated_at = NOW()
+                        embedding_version = $3
                     WHERE id = $1;
+                    -- NB : `icp_profiles` n'a PAS de colonne `updated_at` (seul
+                    -- `created_at` existe, cf. 01_schema.sql) — ne pas la SET,
+                    -- sinon l'UPDATE échoue et `qdrant_point_id` n'est jamais
+                    -- persisté → couche embedding (#26) muette en mode campagne.
                     """,
                     icp_profile_id,
                     icp_profile_id,

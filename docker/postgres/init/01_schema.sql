@@ -45,6 +45,10 @@ CREATE TABLE IF NOT EXISTS criteres_ciblage (
     exiger_email        BOOLEAN NOT NULL DEFAULT FALSE,
     mots_cles_positifs  TEXT[] NOT NULL DEFAULT '{}',
     mots_cles_negatifs  TEXT[] NOT NULL DEFAULT '{}',
+    -- Tags OSM/Overpass (ex. 'tourism=hotel') pour la pré-passe d'enrichissement
+    -- gratuite (#69). Lu par init_campagne + modèle CriteresCiblage — la colonne
+    -- manquait au schéma, ce qui faisait échouer init_campagne en mode campagne.
+    osm_tags            TEXT[] NOT NULL DEFAULT '{}',
     actif               BOOLEAN NOT NULL DEFAULT TRUE,
     CHECK (effectif_max >= effectif_min)
 );
