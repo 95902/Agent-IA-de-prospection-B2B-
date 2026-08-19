@@ -227,8 +227,6 @@ def test_regles_effectif_estime_pas_le_libelle():
 
 
 # --- Node d'assemblage (#28) — reste un stub tant que le graphe n'est pas câblé ----
-# Conservés depuis #11 : la couche règles est prête (#24) mais `scoring_node` (câblage
-# des 3 couches + agrégation) n'est assemblé qu'en #28.
 def test_scoring_node_is_async_coroutine() -> None:
     """`scoring_node` est bien une coroutine async (règle #8)."""
     from agents.scoring_agent import scoring_node
@@ -236,12 +234,89 @@ def test_scoring_node_is_async_coroutine() -> None:
     assert inspect.iscoroutinefunction(scoring_node)
 
 
-def test_scoring_node_stub_raises_not_implemented() -> None:
-    """Le node lève NotImplementedError tant que #28 ne l'a pas assemblé."""
-    from agents.scoring_agent import scoring_node
+# --- Node de scoring (#28) : I/O + couches monkeypatchées -------------------
 
-    with pytest.raises(NotImplementedError):
-        asyncio.run(scoring_node({"prospects": []}))
+
+class _FakeAsyncClient:
+    """AsyncAnthropic factice — le node l'ouvre en context manager mais _score_llm
+    est monkeypatché, donc le client n'est jamais réellement utilisé."""
+
+    def __init__(self, *a, **k):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+
+def _patch_scoring_node(monkeypatch, scores_finaux):
+    """Monkeypatch upsert/couches/agrégation + le client Claude. `scores_finaux` =
+    liste des score_final renvoyés (1 par prospect scoré). Retourne les ids upsertés."""
+    ids = []
+    it = iter(scores_finaux)
+
+    async def _fake_upsert(data):
+        pid = f"id-{len(ids)}"
+        ids.append(pid)
+        return pid
+
+    async def _fake_llm(client, sys, usr, score_regles_fallback):
+        return {"score": 50, "justification": "x", "signaux_positifs": [],
+                "signaux_negatifs": [], "priorite": "moyenne"}
+
+    async def _fake_embedding(prospect, icp, prospect_id=None):
+        return 0.5
+
+    async def _fake_agreger(prospect_id, score_regles, llm, score_embedding,
+                            config_scoring=None, **kw):
+        return sa.ScoreResult(
+            score_regles=score_regles, score_llm=llm["score"],
+            score_embedding=score_embedding, score_final=next(it), priorite="moyenne",
+        )
+
+    monkeypatch.setattr(sa.anthropic, "AsyncAnthropic", _FakeAsyncClient)
+    monkeypatch.setattr(sa, "upsert_prospect", _fake_upsert)
+    monkeypatch.setattr(sa, "_score_llm", _fake_llm)
+    monkeypatch.setattr(sa, "_score_embedding", _fake_embedding)
+    monkeypatch.setattr(sa, "agreger_et_sauvegarder", _fake_agreger)
+    return ids
+
+
+def _state_scoring(prospects):
+    return {"prospects": prospects, "criteres": _criteres(),
+            "icp_embedding": None, "config_scoring": {}}
+
+
+def test_scoring_node_compte_les_qualifies(monkeypatch):
+    ids = _patch_scoring_node(monkeypatch, scores_finaux=[75, 20])  # 1 qualifie, 1 invalide
+    state = _state_scoring([_p("A"), _p("B")])
+    out = asyncio.run(sa.scoring_node(state))
+    assert len(ids) == 2                # un upsert par prospect
+    assert out["qualifies"] == 1        # seuls les >= 60 comptent
+    assert out["erreurs"] == []
+
+
+def test_scoring_node_isole_les_erreurs(monkeypatch):
+    _patch_scoring_node(monkeypatch, scores_finaux=[80])  # 1 seul score consommé (le bon)
+
+    async def _upsert_ko_puis_ok(data):
+        if data["nom_entreprise"] == "KO":
+            raise RuntimeError("upsert boom")
+        return "id-ok"
+
+    monkeypatch.setattr(sa, "upsert_prospect", _upsert_ko_puis_ok)
+    state = _state_scoring([_p("KO"), _p("OK")])
+    out = asyncio.run(sa.scoring_node(state))
+    assert len(out["erreurs"]) == 1 and "KO" in out["erreurs"][0]
+    assert out["qualifies"] == 1        # le prospect OK est bien scoré malgré l'échec du KO
+
+
+def test_scoring_node_sans_prospects_ne_fait_rien(monkeypatch):
+    ids = _patch_scoring_node(monkeypatch, scores_finaux=[])
+    out = asyncio.run(sa.scoring_node({"prospects": [], "criteres": _criteres()}))
+    assert ids == [] and out["qualifies"] == 0
 
 
 # --- Couche 3 : cosinus pur (#26) -------------------------------------------
