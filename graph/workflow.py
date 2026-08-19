@@ -22,6 +22,7 @@ from agents.sirene_agent import sirene_node
 from graph.state import EtatAgent
 from models.criteres import CriteresCiblage
 from utils import db
+from utils.tracing import configure_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +219,10 @@ async def run(state: EtatAgent) -> EtatAgent:
     `state` doit contenir `campagne_id`. Retourne l'état final (avec `qualifies`,
     `erreurs`). La fermeture du pool PG / client Qdrant est du ressort de
     l'orchestrateur appelant (`main.py`, #29), pas de `run`."""
+    # Observabilité LangSmith (#30) : active le traçage si LANGCHAIN_TRACING_V2 + une clé
+    # sont présents (idempotent, propagation env-only). L'appel Claude tracé porte
+    # `@traceable` dans scoring_agent. Sans config, no-op silencieux.
+    configure_tracing()
     state.setdefault("erreurs", [])
     state.setdefault("collectes", 0)
     state.setdefault("qualifies", 0)

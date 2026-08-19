@@ -36,6 +36,22 @@ from utils.embeddings import get_embedding
 
 logger = logging.getLogger(__name__)
 
+# Observabilité LangSmith (#30) — OPTIONNELLE. `@traceable` trace l'appel Claude
+# (latence, tokens, coût) quand LANGCHAIN_TRACING_V2 + une clé sont présents (config
+# propagée par `utils.tracing.configure_tracing`, appelée au démarrage du pipeline).
+# Import gardé : si `langsmith` n'est pas installé, le décorateur devient un no-op —
+# le scoring fonctionne à l'identique, sans traçage (jamais de dépendance dure).
+try:
+    from langsmith import traceable
+except ImportError:  # pragma: no cover - langsmith optionnel
+    def traceable(*d_args, **d_kwargs):  # type: ignore[misc]
+        """No-op : supporte @traceable ET @traceable(...) quand langsmith est absent."""
+        if d_args and callable(d_args[0]) and not d_kwargs:
+            return d_args[0]
+        def _decore(fn):
+            return fn
+        return _decore
+
 # Environnement Jinja des templates de prompt (rendus dynamiquement depuis l'ICP, #25).
 _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 _JINJA_ENV = Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)), autoescape=False)
@@ -219,6 +235,7 @@ def _fallback_llm(score_regles: int, raison: str) -> dict:
     }
 
 
+@traceable(run_type="llm", name="score_llm_claude")
 async def _score_llm(
     client: anthropic.AsyncAnthropic,
     system_rendu: str,
