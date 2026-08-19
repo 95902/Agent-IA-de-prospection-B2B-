@@ -115,6 +115,7 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
                 effectif_min, effectif_max, anciennete_min_ans,
                 exiger_site_web, exiger_email,
                 mots_cles_positifs, mots_cles_negatifs,
+                osm_tags,
                 actif
             FROM criteres_ciblage
             WHERE id = $1;
@@ -142,6 +143,7 @@ async def init_campagne(etat: EtatAgent) -> EtatAgent:
             exiger_email=critere_row["exiger_email"],
             mots_cles_positifs=list(critere_row["mots_cles_positifs"] or []),
             mots_cles_negatifs=list(critere_row["mots_cles_negatifs"] or []),
+            osm_tags=list(critere_row["osm_tags"] or []),
             actif=critere_row["actif"],
         )
 
