@@ -71,13 +71,14 @@ def test_main_help_runs() -> None:
     )
     assert result.returncode == 0, f"main.py --help a échoué :\n{result.stderr}"
     assert "prospection" in result.stdout.lower()
-    assert "run" in result.stdout
-    assert "init-icp" in result.stdout
-    assert "smoke" in result.stdout
+    # CLI à flags plats (#29) : les 3 modes doivent apparaître dans l'aide.
+    assert "--campagne-id" in result.stdout
+    assert "--list-campagnes" in result.stdout
+    assert "--dry-run" in result.stdout
 
 
 def test_main_no_command_errors() -> None:
-    """`python main.py` sans sous-commande → usage error (exit 2, subparsers required)."""
+    """`python main.py` sans aucun mode → usage error (exit 2)."""
     result = subprocess.run(
         [sys.executable, "main.py"],
         capture_output=True,
@@ -86,7 +87,8 @@ def test_main_no_command_errors() -> None:
         errors="replace",
         cwd=_REPO_ROOT,
     )
-    # Subparsers required=True → argparse sort avec code 2 (usage error).
+    # main() appelle parser.error(...) quand ni --campagne-id, ni --depts/--naf,
+    # ni --list-campagnes → argparse sort avec code 2 (usage error).
     assert result.returncode == 2
     assert "usage:" in result.stderr.lower() or "usage:" in result.stdout.lower()
 

@@ -319,6 +319,41 @@ def test_scoring_node_sans_prospects_ne_fait_rien(monkeypatch):
     assert ids == [] and out["qualifies"] == 0
 
 
+def test_scoring_node_dry_run_n_ecrit_rien(monkeypatch):
+    """dry-run (#29) : pas d'upsert, pas d'`agreger_et_sauvegarder` ; score via `_agreger`
+    (réel), embedding sans persistance Qdrant (id=None), qualifiés quand même comptés."""
+    appels = {"upsert": 0, "agreger": 0, "emb_id": "?"}
+
+    async def _no_upsert(data):
+        appels["upsert"] += 1
+        return "id"
+
+    async def _no_agreger(*a, **k):
+        appels["agreger"] += 1
+
+    async def _fake_llm(client, s, u, score_regles_fallback):
+        return {"score": 100, "justification": "", "signaux_positifs": [],
+                "signaux_negatifs": [], "priorite": "haute"}
+
+    async def _fake_emb(prospect, icp, prospect_id=None):
+        appels["emb_id"] = prospect_id
+        return 1.0
+
+    monkeypatch.setattr(sa.anthropic, "AsyncAnthropic", _FakeAsyncClient)
+    monkeypatch.setattr(sa, "upsert_prospect", _no_upsert)
+    monkeypatch.setattr(sa, "agreger_et_sauvegarder", _no_agreger)
+    monkeypatch.setattr(sa, "_score_llm", _fake_llm)
+    monkeypatch.setattr(sa, "_score_embedding", _fake_emb)
+
+    state = {"prospects": [_p("A")], "criteres": _criteres(),
+             "icp_embedding": None, "config_scoring": {}, "dry_run": True}
+    out = asyncio.run(sa.scoring_node(state))
+    assert appels["upsert"] == 0 and appels["agreger"] == 0   # AUCUNE écriture
+    assert appels["emb_id"] is None                            # embedding non persisté
+    # _agreger(0 règles, 100 llm, 1.0 emb, défaut) = 45 + 20 = 65 -> qualifie
+    assert out["qualifies"] == 1
+
+
 # --- Couche 3 : cosinus pur (#26) -------------------------------------------
 def test_cosinus_vecteurs_identiques():
     assert _cosinus([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(1.0)
