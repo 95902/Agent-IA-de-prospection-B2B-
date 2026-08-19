@@ -29,7 +29,7 @@ PG_VOLUME    = prospection_b2b_postgres_data
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev prod stop psql logs backup reset-db pull-ollama smoke status
+.PHONY: help dev prod stop psql logs backup reset-db pull-ollama smoke status purge-rgpd purge-rgpd-dry
 
 ## help — Afficher cette aide
 help:
@@ -95,3 +95,9 @@ reset-db:
 	else \
 		echo "Abandon."; \
 	fi
+# --- RGPD (#41) : purge de retention, cron quotidien en prod ----------------
+purge-rgpd:
+	python scripts/purge_rgpd.py
+
+purge-rgpd-dry:
+	python scripts/purge_rgpd.py --dry-run
