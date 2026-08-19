@@ -309,6 +309,21 @@ Déjà intégré ci-dessus : sur `RateLimitError`/`APIStatusError`/`APIConnectio
 
 Fichier : `agents/scoring_agent.py` → `_score_embedding(...)`
 
+> **⚠️ Portée réelle de la couche (mesuré, audit #32 — 19/08/2026).** Sur une campagne
+> **mono-secteur** (tous les prospects partagent le code NAF de l'ICP, ce qui est le cas par
+> construction : Sirene collecte PAR NAF), le cosinus prospect↔ICP est **quasi constant** —
+> mesuré 0.61–0.78 (médiane ~0.71) sur 100 hôtels réels (5510Z, dép. 75/92, Haiku 4.5). Avec
+> le poids 0.20, la couche ajoute donc **~+14 points quasi identiques à TOUS les prospects** :
+> elle ne **discrimine pas** à l'intérieur d'une campagne mono-secteur, elle fixe surtout un
+> **plancher**. Le classement intra-campagne est piloté par les règles (0.35) et le LLM (0.45).
+>
+> La couche garde son intérêt pour **écarter le hors-profil** dans un lot hétérogène (ex. holdings/
+> SCI enregistrées sous le NAF du secteur mais qui ne sont pas de vraies cibles) — mais le LLM
+> joue déjà ce rôle et plus finement (il note ces coquilles à 0). **Ne pas attendre de la couche
+> embedding qu'elle range des hôtels entre eux.** Piste : si les campagnes restent mono-secteur,
+> ré-arbitrer le poids `w_embedding` (le rapprocher de 0, au profit du LLM) est défendable —
+> décision **par campagne** via `campagnes.config_scoring`, jamais en dur (règle #2).
+
 > **⟳ dérive corrigée — utils réels + cosinus Python pur.** L'ancienne version appelait
 > `ollama_client.embeddings(model=…, prompt=…)` et `numpy`. La réalité :
 >
