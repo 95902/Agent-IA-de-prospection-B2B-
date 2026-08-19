@@ -195,6 +195,20 @@ def test_regles_penalite_naf_hors_icp():
     assert _score_regles(dehors, crit) == 25   # 35 + 20 - 30
 
 
+def test_regles_naf_normalise_point_insee():
+    """Régression : le NAF INSEE réel arrive AVEC point (`45.20A`) alors que
+    `criteres_ciblage.codes_naf` est stocké SANS point (`4520A`, cf.
+    `sirene._naf_avec_point`). La comparaison doit normaliser les deux, sinon la
+    pénalité -30 frappait à tort TOUT prospect réel (dotted ≠ dotless)."""
+    crit = _criteres(codes_naf=["4520A", "4520B"], effectif_min=2, effectif_max=15)
+    # Prospect réel : code_naf avec point → matche l'ICP dot-less après normalisation.
+    dedans = _p(code_naf="45.20A", effectif_estime=8, telephone=TEL_OK, email=EMAIL_OK)
+    assert _score_regles(dedans, crit) == 55   # 35 + 20, PAS de -30
+    # Contrôle : un NAF réellement hors ICP reste pénalisé.
+    dehors = _p(code_naf="68.20B", effectif_estime=8, telephone=TEL_OK, email=EMAIL_OK)
+    assert _score_regles(dehors, crit) == 25   # 35 + 20 - 30
+
+
 def test_regles_codes_naf_vides_pas_de_penalite():
     """ICP sans codes_naf : aucune pénalité NAF, quel que soit le code du prospect."""
     crit = _criteres(codes_naf=[], effectif_min=2, effectif_max=15)
