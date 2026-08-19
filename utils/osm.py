@@ -162,7 +162,10 @@ def _construire_requete_overpass(osm_tags: list[str], bbox: tuple[float, float, 
         clauses.append(f"  node{sel}{zone};")
         clauses.append(f"  way{sel}{zone};")
     corps = "\n".join(clauses)
-    return f"[out:json][timeout:60];\n(\n{corps}\n);\nout center tags;"
+    # timeout serveur court (25 s) : les bbox sont petites (code postal) → réponse
+    # rapide quand Overpass est sain ; en cas de surcharge (429/504) on préfère
+    # échouer vite et laisser la cascade payante prendre le relais (#69).
+    return f"[out:json][timeout:25];\n(\n{corps}\n);\nout center tags;"
 
 
 def _parser_pois(data: dict) -> list[POI]:
@@ -220,7 +223,11 @@ async def interroger_overpass(
                 url, data={"data": requete},
                 headers={"User-Agent": USER_AGENT,
                          "Content-Type": "application/x-www-form-urlencoded"},
-                timeout=90.0,
+                # Timeout client borné (30 s) aligné sur le timeout serveur (25 s) :
+                # quand Overpass est dégradé (429/504), on échoue vite et on passe au
+                # miroir suivant plutôt que d'attendre 90 s × N miroirs (la pré-passe
+                # OSM #69 bloquait le pipeline plusieurs minutes en cas de surcharge).
+                timeout=30.0,
             )
             resp.raise_for_status()
             return _parser_pois(resp.json())
