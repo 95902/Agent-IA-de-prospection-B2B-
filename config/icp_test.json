@@ -1,0 +1,17 @@
+{
+  "nom_entreprise": "Client Test — Hotellerie",
+  "secteur": "Hotellerie independante",
+  "produit_vendu": "Solution SaaS de gestion hoteliere",
+  "zone_intervention": "Ile-de-France",
+  "nom": "Hotels independants — cible de test",
+  "description_icp": "Hotels independants (non affilies a un grand groupe), petites et moyennes structures de 2 a 50 salaries, en activite depuis au moins 2 ans, a Paris et en proche couronne.",
+  "codes_naf": ["5510Z"],
+  "departements": ["75", "92"],
+  "effectif_min": 2,
+  "effectif_max": 50,
+  "anciennete_min_ans": 2,
+  "exiger_site_web": false,
+  "exiger_email": false,
+  "mots_cles_positifs": ["hotel", "hebergement", "chambres", "tourisme", "sejour", "reservation", "boutique-hotel", "auberge"],
+  "mots_cles_negatifs": ["groupe", "chaine", "franchise", "residence"]
+}

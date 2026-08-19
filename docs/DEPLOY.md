@@ -17,8 +17,12 @@ en plus de Postgres + Qdrant + l'app Python + l'OS.
 | Value | 4 Go | 5.50 | ⚠️ Minimum viable **avec mem-limits réduits** (§9) ; risque d'OOM sur les 500 prospects (#35) |
 | **Essential** | **8 Go** | **10.50** | ✅ **Recommandé** — tient les `mem_limit` du compose, campagne pilote sans OOM |
 
-**Recommandation : Essential 8 Go.** Reste sous le budget VPS prévu (~15–30 €/mois, CLAUDE.md)
-et « cancel anytime ». Prendre Ubuntu **22.04 LTS**, région EU (cohérent RGPD / LangSmith EU).
+**Recommandation : 8 Go (Essential / « VPS-2 »).** Reste sous le budget VPS prévu (~15–30 €/mois,
+CLAUDE.md) et « cancel anytime ». Région EU (cohérent RGPD / LangSmith EU).
+
+> **Retenu (20/08/2026) : OVH VPS-2 — 4 vCore / 8 Go / 75 Go NVMe, EU (Strasbourg),
+> Ubuntu 26.04, ~8,49 €/mois**, avec l'option Automated Backup (offerte) en filet whole-VM en plus
+> du `pg_dump` (§8). Ubuntu 26.04 → Python système récent, cf. §3.
 
 ---
 
@@ -63,15 +67,20 @@ curl -fsSL https://get.docker.com | sh
 usermod -aG docker deploy      # relog pour prendre effet
 ```
 
-## 3. Python 3.12 pour l'app 🛠️
+## 3. Python pour l'app 🛠️
 
-L'app (`main.py`, scripts) tourne **sur l'hôte** (pas de Dockerfile — décision MVP). Ubuntu 22.04
-livre Python 3.10 ; le repo cible 3.12 :
+L'app (`main.py`, scripts) tourne **sur l'hôte** (pas de Dockerfile — décision MVP). **Ubuntu 26.04
+livre déjà un Python récent (3.13.x)** — la suite tourne sur 3.13 en local, donc on utilise le
+python système, **sans deadsnakes** :
 
 ```bash
-sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt update
-sudo apt install -y python3.12 python3.12-venv
+sudo apt install -y python3-venv python3-pip
+python3 --version    # 3.13.x attendu sur Ubuntu 26.04
 ```
+
+> Sur une image plus ancienne (Ubuntu 22.04 = Python 3.10), installer 3.12 via deadsnakes :
+> `sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt install -y python3.12 python3.12-venv`,
+> puis remplacer `python3` par `python3.12` au §4.
 
 ## 4. Cloner le repo 🛠️
 
@@ -79,7 +88,7 @@ sudo apt install -y python3.12 python3.12-venv
 sudo mkdir -p /opt && sudo chown deploy:deploy /opt
 cd /opt && git clone https://github.com/95902/Agent-IA-de-prospection-B2B-.git prospection-b2b
 cd prospection-b2b
-python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 > ✅ `.gitattributes` force LF sur `*.sh` → pas de piège CRLF sur l'entrypoint Ollama.
@@ -115,16 +124,36 @@ make smoke           # scripts/smoke_test.py — 11 tables, Qdrant, Ollama, embe
 - `docker-compose.prod.yml` lie Postgres/Qdrant/Ollama à `127.0.0.1` et met `restart: always` ;
   pgAdmin/Metabase ne sont pas démarrés (pas de profil `dev`/`monitoring`).
 
-## 7. Semer le client pilote 🛠️ (prérequis #35)
+## 7. Semer un ICP + une campagne 🛠️
+
+Pour **valider le déploiement**, l'ICP de test fourni (`config/icp_test.json`, secteur hôtels — la
+meilleure couverture d'enrichissement mesurée à l'audit #32). Pour la **vraie campagne pilote
+(#35)**, remplacer par `config/icp_pilote.json` (l'ICP du client réel — à créer).
 
 ```bash
-V=/opt/prospection-b2b/.venv/bin/python
 cd /opt/prospection-b2b
-PYTHONPATH=. $V scripts/seed_icp.py --from-file config/icp_pilote.json   # → CLIENT_ID
-PYTHONPATH=. $V scripts/init_icp.py --client-id <CLIENT_ID>              # embarque l'ICP → Qdrant
-# Créer la campagne (client + critère + icp_profile → ligne campagnes) : cf. seed_icp / SQL.
-# Noter le CAMPAGNE_ID pour le cron (§8).
+V=".venv/bin/python"
+PYTHONPATH=. $V scripts/seed_icp.py --from-file config/icp_test.json    # → note le CLIENT_ID affiché
+PYTHONPATH=. $V scripts/init_icp.py --client-id <CLIENT_ID>            # embarque l'ICP → Qdrant
+
+# seed_icp ne crée PAS la campagne : la créer depuis le client/critère/icp semés
+# (config_scoring prend son DEFAULT SQL = 35/45/20) :
+docker compose exec -T postgres psql -U scraper -d prospection_b2b -c "
+INSERT INTO campagnes (client_id, critere_id, icp_profile_id, nom)
+SELECT c.id, cc.id, icp.id, 'Campagne test'
+FROM clients c
+JOIN criteres_ciblage cc ON cc.client_id = c.id
+JOIN icp_profiles     icp ON icp.client_id = c.id
+WHERE c.id = '<CLIENT_ID>'
+RETURNING id;"                                                          # → note le CAMPAGNE_ID
+
+# Run manuel de validation (100 prospects) :
+PYTHONPATH=. $V main.py --campagne-id <CAMPAGNE_ID> --limit 100
 ```
+
+> Ce run exerce tout le pipeline en prod (Sirene → OSM → enrich → nettoyage → scoring Claude →
+> persistance) et **mesure le débit d'embedding Ollama sur le CPU OVH** (l'inconnue clé pour #35).
+> Reporter la durée + `qualifiés`/`erreurs` du résumé.
 
 ---
 
