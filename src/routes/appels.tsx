@@ -1,14 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getProspect, getProspects } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getProspect, getProspects, postNote, postOutcome } from "@/lib/api";
 import { Building2, Mail, MapPin, Phone, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
 
 const Calls = () => {
+  const qc = useQueryClient();
+
   // File d'attente = prospects qualifiés réels (triés par score).
   const { data: page } = useQuery({
     queryKey: ["prospects", { statut: "qualifie", limit: 50 }],
@@ -23,6 +25,24 @@ const Calls = () => {
     queryFn: () => getProspect(activeId as string),
     enabled: !!activeId,
   });
+
+  const [note, setNote] = useState("");
+
+  // Résultat d'appel → change le statut ; le prospect quitte la file (plus 'qualifie').
+  const outcome = useMutation({
+    mutationFn: (statut: string) => postOutcome(activeId as string, statut),
+    onSuccess: () => {
+      setSelectedId(null);
+      setNote("");
+      qc.invalidateQueries({ queryKey: ["prospects"] });
+    },
+  });
+  const saveNote = useMutation({
+    mutationFn: () => postNote(activeId as string, note),
+    onSuccess: () => setNote(""),
+  });
+
+  const busy = outcome.isPending;
 
   return (
     <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
@@ -89,7 +109,10 @@ const Calls = () => {
               {prospect.telephone && (
                 <div className="flex gap-2 items-center">
                   <Phone />
-                  <a className="hover:underline" href={`tel:${prospect.telephone}`}>
+                  <a
+                    className="hover:underline"
+                    href={`tel:${prospect.telephone}`}
+                  >
                     {prospect.telephone}
                   </a>
                 </div>
@@ -97,7 +120,10 @@ const Calls = () => {
               {prospect.email && (
                 <div className="flex gap-2 items-center">
                   <Mail />
-                  <a className="hover:underline" href={`mailto:${prospect.email}`}>
+                  <a
+                    className="hover:underline"
+                    href={`mailto:${prospect.email}`}
+                  >
                     {prospect.email}
                   </a>
                 </div>
@@ -130,36 +156,60 @@ const Calls = () => {
         )}
       </div>
 
-      {/* Contrôles d'appel — inactifs tant que l'API d'écriture n'existe pas */}
+      {/* Contrôles d'appel — câblés sur l'API d'écriture (#116 A) */}
       <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full overflow-hidden rounded-lg">
         <Card className="w-full shrink-0 border gap-3 border-gray-400 rounded-lg flex flex-col p-4">
           <p className="text-center text-sm text-muted-foreground">
-            Résultat d'appel — <span className="font-semibold">à venir</span>{" "}
-            (nécessite l'API d'écriture)
+            Résultat d'appel
           </p>
           <div className="flex w-full gap-2">
-            <Button disabled className="flex-1 h-16 rounded-lg">
+            <Button
+              disabled={!activeId || busy}
+              onClick={() => outcome.mutate("rdv")}
+              className="flex-1 h-16 rounded-lg bg-emerald-600 hover:bg-emerald-700"
+            >
               RDV
             </Button>
-            <Button disabled className="flex-1 h-16 rounded-lg">
+            <Button
+              disabled={!activeId || busy}
+              onClick={() => outcome.mutate("refus")}
+              className="flex-1 h-16 rounded-lg bg-rose-600 hover:bg-rose-700"
+            >
               Refus
             </Button>
-            <Button disabled className="flex-1 h-16 rounded-lg">
+            <Button
+              disabled={!activeId || busy}
+              onClick={() => outcome.mutate("absent")}
+              variant="outline"
+              className="flex-1 h-16 rounded-lg"
+            >
               Absent
             </Button>
           </div>
+          {outcome.isError && (
+            <p className="text-xs text-rose-600 text-center">
+              Échec : {(outcome.error as Error).message}
+            </p>
+          )}
         </Card>
         <Card className="w-full flex-1 border rounded-lg flex flex-col">
           <div className="w-full flex items-center justify-between p-4">
             <p>NOTES</p>
           </div>
           <Textarea
-            disabled
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={!activeId}
             className="flex-1 border-y rounded-none"
-            placeholder="Enregistrement des notes à venir (API d'écriture)."
+            placeholder="Objections, budget, timeline…"
           />
           <div className="w-full flex justify-end p-4">
-            <Button disabled>Sauvegarder</Button>
+            <Button
+              disabled={!activeId || !note.trim() || saveNote.isPending}
+              onClick={() => saveNote.mutate()}
+            >
+              {saveNote.isPending ? "…" : "Sauvegarder"}
+            </Button>
           </div>
         </Card>
       </div>

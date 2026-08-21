@@ -107,3 +107,31 @@ export const getKpis = (params: { campagneId?: string; sinceDays?: number } = {}
   apiGet<Kpis>(
     `/api/kpis${qs({ campagne_id: params.campagneId, since_days: params.sinceDays })}`,
   );
+
+// --- Écriture (#116 A) -----------------------------------------------------
+async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`API ${res.status} ${res.statusText} — ${path}`);
+  }
+  return (await res.json()) as T;
+}
+
+export const postOutcome = (id: string, statut: string) =>
+  apiPost<{ id: string; statut: string }>(
+    `/api/prospects/${id}/outcome`,
+    { statut },
+  );
+
+export const postNote = (id: string, note: string) =>
+  apiPost<{ id: string; ok: boolean }>(`/api/prospects/${id}/note`, { note });
+
+export const postCampagne = (payload: Record<string, unknown>) =>
+  apiPost<{ campagne_id: string; client_id: string; nom: string }>(
+    "/api/campagnes",
+    payload,
+  );
