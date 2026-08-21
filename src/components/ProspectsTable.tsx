@@ -45,6 +45,13 @@ export interface CompanyData {
   scoringPercentage: number;
   lastContactDate: string;
   lastContactType: string;
+  contactable: boolean;
+}
+
+export interface ProspectFilters {
+  contactableOnly?: boolean;
+  departements?: string[];
+  codeNaf?: string;
 }
 
 const prospectColumns: ColumnConfig[] = [
@@ -52,10 +59,14 @@ const prospectColumns: ColumnConfig[] = [
   { key: "company", label: "Nom de la compagnie" },
   { key: "status", label: "Code NAF" },
   { key: "score", label: "Notation", className: "w-[200px]" },
-  { key: "value", label: "Dernier contact" },
+  { key: "value", label: "Joignabilité" },
 ];
 
-export const ProspectsTable = () => {
+export const ProspectsTable = ({
+  filters,
+}: {
+  filters?: ProspectFilters;
+} = {}) => {
   // Slice 2 (#116) : données réelles depuis l'API au lieu du mock.
   const {
     data: page,
@@ -63,10 +74,25 @@ export const ProspectsTable = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["prospects", { limit: 100 }],
-    queryFn: () => getProspects({ limit: 100 }),
+    queryKey: ["prospects", { limit: 200 }],
+    queryFn: () => getProspects({ limit: 200 }),
   });
-  const data: CompanyData[] = (page?.items ?? []).map(prospectToCompanyData);
+  // Filtres appliqués côté client sur l'ensemble chargé (#116).
+  const rows = (page?.items ?? []).filter((p) => {
+    if (filters?.contactableOnly && !(p.telephone || p.email)) return false;
+    if (
+      filters?.departements?.length &&
+      !filters.departements.includes(p.departement ?? "")
+    )
+      return false;
+    if (
+      filters?.codeNaf &&
+      !(p.code_naf ?? "").replace(".", "").startsWith(filters.codeNaf)
+    )
+      return false;
+    return true;
+  });
+  const data: CompanyData[] = rows.map(prospectToCompanyData);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowPerPage, setRowPerPage] = useState(10);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(
@@ -74,7 +100,9 @@ export const ProspectsTable = () => {
   );
 
   const totalPages = Math.max(1, Math.ceil(data.length / rowPerPage));
-  const startIndex = (currentPage - 1) * rowPerPage;
+  // Clamp : un filtre qui réduit la liste ne doit pas laisser une page vide.
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * rowPerPage;
   const endIndex = startIndex + rowPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
   const navigate = useNavigate();
@@ -211,7 +239,15 @@ export const ProspectsTable = () => {
                   </TableCell>
                   <TableCell className="w-[25%] font-medium">
                     <div className="flex flex-col gap-1">
-                      <p>{item.lastContactDate}</p>
+                      {item.contactable ? (
+                        <span className="text-emerald-600 text-sm whitespace-nowrap">
+                          ● Joignable
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm whitespace-nowrap">
+                          ○ Pas de contact
+                        </span>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {item.lastContactType}
                       </p>

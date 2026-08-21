@@ -37,5 +37,6 @@ export function prospectToCompanyData(p: ProspectRow): CompanyData {
     scoringPercentage: p.score_final,
     lastContactDate: "—",
     lastContactType: p.email ? "Email" : p.telephone ? "Téléphone" : "—",
+    contactable: Boolean(p.telephone || p.email),
   };
 }

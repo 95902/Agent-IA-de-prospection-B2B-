@@ -18,131 +18,117 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { ProspectsTable } from "@/components/ProspectsTable";
+import {
+  ProspectsTable,
+  type ProspectFilters,
+} from "@/components/ProspectsTable";
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 
-const NAFCodes = [
-  { label: "NAF", value: "" },
-  { label: "A", value: "A" },
-  { label: "B", value: "B" },
-  { label: "C", value: "C" },
-  { label: "D", value: "D" },
-  { label: "E", value: "E" },
+// Options réelles présentes dans les données (dép. 75/92, NAF hôtels/agences).
+const DEPARTEMENTS = [
+  { value: "75", label: "75 — Paris" },
+  { value: "92", label: "92 — Hauts-de-Seine" },
+];
+const NAF_OPTIONS = [
+  { value: "", label: "Tous les NAF" },
+  { value: "5510Z", label: "5510Z — Hôtels" },
+  { value: "7311Z", label: "7311Z — Agences de com" },
 ];
 
-const departmentList = ["Information Tech", "Marketing & Sales", "Opérations"];
-
 const Propspect = () => {
-  const [numberOfEmployees, setNumberOfEmployees] = useState<string | null>(
-    null,
-  );
-  const [nafCode, setNafCode] = useState<string | null>(null);
+  const [contactableOnly, setContactableOnly] = useState(false);
+  const [nafCode, setNafCode] = useState<string>("");
   const [departments, setDepartments] = useState<string[]>([]);
-  const employeeRanges = ["1-50", "51-100", "101-200", "201-500"];
-  console.log(departments, "dep");
+
+  const toggleDepartment = (dep: string, checked: boolean) => {
+    setDepartments((prev) =>
+      checked ? [...prev, dep] : prev.filter((d) => d !== dep),
+    );
+  };
   const handleReset = () => {
-    setNumberOfEmployees(null);
+    setContactableOnly(false);
     setNafCode("");
     setDepartments([]);
   };
 
-  // const toggleDepartment = (dep: string, checked: boolean) => {
-  //   setDepartments((prev) =>
-  //     checked ? [...prev, dep] : prev.filter((item) => item !== dep),
-  //   );
-  // };
+  // Filtres appliqués en direct (pas de bouton "Appliquer").
+  const filters: ProspectFilters = {
+    contactableOnly,
+    departements: departments,
+    codeNaf: nafCode || undefined,
+  };
 
   return (
     <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
       <Card className="w-full lg:max-w-md h-fit lg:h-full overflow-hidden border rounded-lg p-4 shrink-0">
-        <form>
-          <FieldGroup>
-            <FieldSet>
-              <div className="flex items-center justify-between mb-4">
-                <FieldLegend>Filtres</FieldLegend>
-                <Button type="reset" variant="outline" onClick={handleReset}>
-                  Réinitialiser
-                </Button>
-              </div>
-              <FieldDescription>
-                Filtrez vos prospects selon les différents critères
-              </FieldDescription>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel>Départements</FieldLabel>
-                  <div className="flex flex-col gap-2 mt-2">
-                    {departmentList.map((department) => {
-                      // const isChecked = departments.includes(department);
-                      return (
-                        <label
-                          key={department}
-                          className="flex gap-2 items-center cursor-pointer text-sm"
-                        >
-                          <Checkbox
-                            id={`dep-${department}`}
-                            // checked={isChecked}
-                            // onCheckedChange={(checked) =>
-                            //   toggleDepartment(department, !!checked)
-                            // }
-                          />
-                          <span>{department}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="select-naf">Code NAF</FieldLabel>
-                  <Select
-                    value={nafCode}
-                    onValueChange={(val) => setNafCode(val)}
-                  >
-                    <SelectTrigger id="select-naf">
-                      <SelectValue placeholder="Code NAF" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {NAFCodes.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-                    Nombre d'employés
-                  </FieldLabel>
-                  <div className="flex flex-wrap gap-2 w-full">
-                    {employeeRanges.map((range) => (
-                      <Button
-                        key={range}
-                        type="button"
-                        variant="outline"
-                        onClick={() => setNumberOfEmployees(range)}
-                        className={`w-32 rounded-md transition-colors ${
-                          numberOfEmployees === range
-                            ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
-                            : ""
-                        }`}
-                      >
-                        {range.replace("-", " - ")}
-                      </Button>
-                    ))}
-                  </div>
-                </Field>
-              </FieldGroup>
-            </FieldSet>
-          </FieldGroup>
-          <Button type="submit" className="w-full mt-4">
-            Appliquer les filtres
-          </Button>
-        </form>
+        <FieldGroup>
+          <FieldSet>
+            <div className="flex items-center justify-between mb-4">
+              <FieldLegend>Filtres</FieldLegend>
+              <Button type="button" variant="outline" onClick={handleReset}>
+                Réinitialiser
+              </Button>
+            </div>
+            <FieldDescription>
+              Filtrez la file d'appel selon les différents critères
+            </FieldDescription>
+            <FieldGroup>
+              <Field>
+                <label className="flex gap-2 items-center cursor-pointer text-sm">
+                  <Checkbox
+                    id="contactable-only"
+                    checked={contactableOnly}
+                    onCheckedChange={(c) => setContactableOnly(!!c)}
+                  />
+                  <span>
+                    Uniquement les prospects joignables (tél. ou email)
+                  </span>
+                </label>
+              </Field>
+              <Field>
+                <FieldLabel>Départements</FieldLabel>
+                <div className="flex flex-col gap-2 mt-2">
+                  {DEPARTEMENTS.map((dep) => (
+                    <label
+                      key={dep.value}
+                      className="flex gap-2 items-center cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        id={`dep-${dep.value}`}
+                        checked={departments.includes(dep.value)}
+                        onCheckedChange={(c) => toggleDepartment(dep.value, !!c)}
+                      />
+                      <span>{dep.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="select-naf">Code NAF</FieldLabel>
+                <Select
+                  value={nafCode}
+                  onValueChange={(v) => setNafCode(v ?? "")}
+                >
+                  <SelectTrigger id="select-naf">
+                    <SelectValue placeholder="Tous les NAF" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {NAF_OPTIONS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+        </FieldGroup>
       </Card>
-      <ProspectsTable />
+      <ProspectsTable filters={filters} />
     </div>
   );
 };
