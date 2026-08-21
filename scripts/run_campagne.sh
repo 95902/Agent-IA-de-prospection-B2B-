@@ -1,17 +1,29 @@
 #!/usr/bin/env bash
-# Wrapper cron production — lance une campagne de prospection (issue #11 STUB).
-# Implémentation détaillée portée par une issue dédiée (#29/#33).
+# Wrapper cron production — lance une campagne de prospection (#34).
 #
-# Usage : ./scripts/run_campagne.sh <client-id> [depts] [limit]
+# Pilote la vraie CLI (#29) : `main.py --campagne-id <uuid>`. La campagne doit
+# exister en base (client + criteres_ciblage + icp_profiles + campagnes) et son
+# ICP être embarqué dans Qdrant (scripts/init_icp.py) — voir docs/DEPLOY.md.
+#
+# Usage : ./scripts/run_campagne.sh <campagne-id> [limit]
+#   <campagne-id>  UUID d'une campagne existante (pas un client-id).
+#   [limit]        plafond de prospects collectés (défaut : 500, cf. #35).
 #
 # IMPORTANT (CLAUDE.md) : .gitattributes force LF sur *.sh. Ne pas introduire de
-# CRLF — ça casse les entrypoints Docker (crash en boucle du container Ollama).
+# CRLF — ça casse /bin/sh dans les containers Linux (boucle de redémarrage Ollama).
 set -euo pipefail
 
-CLIENT_ID="${1:?Usage: $0 <client-id> [depts] [limit]}"
-DEPTS="${2:-75,92}"
-LIMIT="${3:-50}"
+CAMPAGNE_ID="${1:?Usage: $0 <campagne-id> [limit]}"
+LIMIT="${2:-500}"
 
-# TODO(issue dédiée) : python main.py run --client-id "$CLIENT_ID" --depts "$DEPTS" --limit "$LIMIT"
-echo "[stub] run_campagne non implémenté — client=$CLIENT_ID depts=$DEPTS limit=$LIMIT" >&2
-exit 2
+# Racine du repo (le script peut être appelé depuis n'importe quel cwd, ex. cron).
+cd "$(dirname "$0")/.."
+
+# Python : venv si présent (VPS : `python3 -m venv .venv && .venv/bin/pip install -r
+# requirements.txt`), sinon le python système (doit avoir les deps). Surchargeable
+# via $PYTHON.
+PY="${PYTHON:-python3}"
+[ -x .venv/bin/python ] && PY=.venv/bin/python
+
+exec env PYTHONPATH=. PYTHONIOENCODING=utf-8 \
+  "$PY" main.py --campagne-id "$CAMPAGNE_ID" --limit "$LIMIT"
