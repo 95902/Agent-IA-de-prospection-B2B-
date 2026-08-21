@@ -134,7 +134,12 @@ services:
       - "${METABASE_PORT:-3000}:3000"
     volumes:
       - metabase_data:/metabase.db
-    mem_limit: 1g
+    # Heap JVM explicite : sans ça, la JVM prend ~25% du mem_limit (250 Mo à 1g)
+    # → OutOfMemoryError au boot (crash-loop). 1g de heap boote confortablement ;
+    # mem_limit 2g laisse la marge non-heap (metaspace/threads). Cf. #37.
+    environment:
+      JAVA_OPTS: "-Xmx1g"
+    mem_limit: 2g
     depends_on:
       postgres:
         condition: service_healthy
