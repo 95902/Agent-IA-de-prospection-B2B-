@@ -30,6 +30,20 @@ export interface ProspectRow {
   site_web: string | null;
 }
 
+export interface ProspectDetail extends ProspectRow {
+  nom_dirigeant: string | null;
+  libelle_naf: string | null;
+  telephone_2: string | null;
+  effectif: string | null;
+  adresse: string | null;
+  code_postal: string | null;
+  date_creation: string | null;
+  score_regles: number;
+  score_llm: number;
+  score_embedding: number;
+  justification_llm: string | null;
+}
+
 export interface ProspectPage {
   total: number;
   limit: number;
@@ -85,6 +99,9 @@ export const getProspects = (params: {
       offset: params.offset,
     })}`,
   );
+
+export const getProspect = (id: string) =>
+  apiGet<ProspectDetail>(`/api/prospects/${id}`);
 
 export const getKpis = (params: { campagneId?: string; sinceDays?: number } = {}) =>
   apiGet<Kpis>(

@@ -1,11 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { DesktopTable } from "@/components/DesktopTable";
 import { KPICard, type KpiCardProps } from "@/components/KPICard";
+import { useQuery } from "@tanstack/react-query";
+import { getKpis } from "@/lib/api";
 
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
-  CircleEuro,
   Cloud,
   HandCoins,
   Rocket,
@@ -17,45 +18,6 @@ import {
 import { CampagneHealth } from "@/components/CampagneHealth";
 import { HeaderPropspect } from "@/components/HeaderPropspect";
 import { ChartProspect } from "@/components/ChartProspect";
-
-const KPICardSeed: KpiCardProps[] = [
-  {
-    title: "Total des prospects",
-    value: "14,282",
-    change: 12.5,
-    isPositive: true,
-    icon: Users,
-    iconTextColor: "text-emerald-500",
-    iconBackgroundColor: "bg-emerald-500/20",
-  },
-  {
-    title: "Valeur du pipeline",
-    value: "2.4M€",
-    change: 8.1,
-    isPositive: true,
-    icon: CircleEuro,
-    iconTextColor: "text-blue-500",
-    iconBackgroundColor: "bg-blue-500/20",
-  },
-  {
-    title: "Note moyenne",
-    value: "84/100",
-    change: 2.4,
-    isPositive: false,
-    icon: Zap,
-    iconTextColor: "text-red-500",
-    iconBackgroundColor: "bg-red-500/20",
-  },
-  {
-    title: "Taux de conversion",
-    value: "4.2%",
-    change: 18.3,
-    isPositive: true,
-    icon: HandCoins,
-    iconTextColor: "text-purple-500",
-    iconBackgroundColor: "bg-purple-500/20",
-  },
-];
 
 export interface PropspectTableProps {
   id: string;
@@ -313,17 +275,56 @@ export const PropspectTableSeed: PropspectTableProps[] = [
 ];
 
 const Dashboard = () => {
+  // KPIs réels (fenêtre 30 jours) depuis l'API (#116). Pas de `change` : aucune
+  // série temporelle pour l'instant → le badge de tendance ne s'affiche pas.
+  const { data: kpis } = useQuery({
+    queryKey: ["kpis", { sinceDays: 30 }],
+    queryFn: () => getKpis({ sinceDays: 30 }),
+  });
+
+  const kpiCards: KpiCardProps[] = [
+    {
+      title: "Prospects collectés",
+      value: kpis?.collectes ?? "…",
+      icon: Users,
+      iconTextColor: "text-emerald-500",
+      iconBackgroundColor: "bg-emerald-500/20",
+    },
+    {
+      title: "Prospects qualifiés",
+      value: kpis?.qualifies ?? "…",
+      icon: Rocket,
+      iconTextColor: "text-blue-500",
+      iconBackgroundColor: "bg-blue-500/20",
+    },
+    {
+      title: "Note moyenne (qualifiés)",
+      value:
+        kpis?.score_moy_qualifies != null
+          ? `${kpis.score_moy_qualifies}/100`
+          : "—",
+      icon: Zap,
+      iconTextColor: "text-amber-500",
+      iconBackgroundColor: "bg-amber-500/20",
+    },
+    {
+      title: "% qualifiés (≥60)",
+      value: kpis != null ? `${kpis.pct_qualifies}%` : "…",
+      icon: HandCoins,
+      iconTextColor: "text-purple-500",
+      iconBackgroundColor: "bg-purple-500/20",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <HeaderPropspect />
       <div className="flex overflow-x-scroll gap-4 p-1">
-        {KPICardSeed.map((kpi, index) => (
+        {kpiCards.map((kpi, index) => (
           <KPICard
             key={index}
             title={kpi.title}
             value={kpi.value}
-            change={kpi.change}
-            isPositive={kpi.isPositive}
             icon={kpi.icon}
             iconTextColor={kpi.iconTextColor}
             iconBackgroundColor={kpi.iconBackgroundColor}
