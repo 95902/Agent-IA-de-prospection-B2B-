@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 export interface KpiCardProps {
   title: string;
   value: number | string;
-  change: number;
-  isPositive: boolean;
+  // Optionnels : sans historique (données API), on n'affiche pas de tendance.
+  change?: number;
+  isPositive?: boolean;
   icon: LucideIcon;
   iconTextColor: string;
   iconBackgroundColor: string;
@@ -31,16 +32,18 @@ export const KPICard = ({
           >
             <Icon className="h-6 w-6" />
           </div>
-          <div
-            className={`flex mt-1 gap-1 font-semibold text-sm ${
-              isPositive
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-rose-600 dark:text-rose-400"
-            }`}
-          >
-            <TrendIcon className="h-4 w-4" />
-            <span> {`${isPositive ? "+" : "-"}${change}%`}</span>
-          </div>
+          {change !== undefined && (
+            <div
+              className={`flex mt-1 gap-1 font-semibold text-sm ${
+                isPositive
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400"
+              }`}
+            >
+              <TrendIcon className="h-4 w-4" />
+              <span> {`${isPositive ? "+" : "-"}${change}%`}</span>
+            </div>
+          )}
         </div>
         <div>
           <p className="text-md text-nowrap text-[#45464D] tracking-wider leading-6  uppercase inter">
