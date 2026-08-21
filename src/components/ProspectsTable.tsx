@@ -28,6 +28,9 @@ import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 import type { ColumnConfig } from "@/components/DesktopTable";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getProspects } from "@/lib/api";
+import { prospectToCompanyData } from "@/lib/adapters";
 
 export interface CompanyData {
   id: string;
@@ -44,65 +47,6 @@ export interface CompanyData {
   lastContactType: string;
 }
 
-export const companyTableSeed: CompanyData[] = [
-  {
-    id: "1",
-    companyName: "Vercel Inc.",
-    contactName: "Guillermo Rauch",
-    location: "SF, USA",
-    logoLetter: "V",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "6201Z",
-    scoringStatus: "Hot",
-    scoringPercentage: 92,
-    lastContactDate: "Oct 24, 2023",
-    lastContactType: "Email Follow-up",
-  },
-  {
-    id: "2",
-    companyName: "Stripe Ltd.",
-    contactName: "John Collison",
-    location: "Dublin, IE",
-    logoLetter: "S",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "4619B",
-    scoringStatus: "Warm",
-    scoringPercentage: 78,
-    lastContactDate: "Oct 23, 2023",
-    lastContactType: "LinkedIn Connect",
-  },
-  {
-    id: "3",
-    companyName: "Anthropic AI",
-    contactName: "Dario Amodei",
-    location: "Palo Alto",
-    logoLetter: "A",
-    logoBgColor: "bg-slate-200 dark:bg-slate-800",
-    logoTextColor: "text-slate-700 dark:text-slate-300",
-    nafCode: "6201Z",
-    scoringStatus: "Cold",
-    scoringPercentage: 34,
-    lastContactDate: "Oct 19, 2023",
-    lastContactType: "Initial Outreach",
-  },
-  {
-    id: "4",
-    companyName: "Figma Design",
-    contactName: "Dylan Field",
-    location: "SF",
-    logoLetter: "F",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "7022Z",
-    scoringStatus: "Hot",
-    scoringPercentage: 88,
-    lastContactDate: "Oct 25, 2023",
-    lastContactType: "Phone Call",
-  },
-];
-
 const prospectColumns: ColumnConfig[] = [
   { key: "checkbox", label: "" },
   { key: "company", label: "Nom de la compagnie" },
@@ -112,7 +56,17 @@ const prospectColumns: ColumnConfig[] = [
 ];
 
 export const ProspectsTable = () => {
-  const data = companyTableSeed;
+  // Slice 2 (#116) : données réelles depuis l'API au lieu du mock.
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["prospects", { limit: 100 }],
+    queryFn: () => getProspects({ limit: 100 }),
+  });
+  const data: CompanyData[] = (page?.items ?? []).map(prospectToCompanyData);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowPerPage, setRowPerPage] = useState(10);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(
@@ -165,6 +119,21 @@ export const ProspectsTable = () => {
       params: { prospectId: id },
     });
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full lg:h-full flex items-center justify-center p-8 text-sm text-muted-foreground">
+        Chargement des prospects…
+      </Card>
+    );
+  }
+  if (isError) {
+    return (
+      <Card className="w-full lg:h-full flex items-center justify-center p-8 text-sm text-rose-600">
+        Impossible de charger les prospects : {(error as Error).message}
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full lg:h-full flex flex-col justify-between overflow-hidden border rounded-lg ">
