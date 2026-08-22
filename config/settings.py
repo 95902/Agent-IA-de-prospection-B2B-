@@ -54,6 +54,14 @@ class Settings(BaseSettings):
     pappers_api_key: str = ""      # API Entreprise (auth : query param `api_token`)
     dropcontact_api_key: str = ""  # emails B2B (auth : header `X-Access-Token`)
 
+    # ---------- Airtable (livraison des prospects qualifiés — #36) ----------
+    # Personal Access Token (scopes data.records:read + data.records:write) + base/table
+    # de destination. RGPD : pousse de la PII vers un SaaS US — OK MVP, à durcir avant
+    # usage commercial (DPA / EU / purge, cf. #36).
+    airtable_pat: str = ""
+    airtable_base_id: str = ""        # commence par app...
+    airtable_table: str = "Prospects"
+
     # ---------- Qualité des prospects (#68) ----------
     # Au-delà de N établissements actifs à la MÊME adresse, on considère qu'il
     # s'agit d'une société de domiciliation (siège social / boîte aux lettres)
