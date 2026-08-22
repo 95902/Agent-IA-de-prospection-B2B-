@@ -1,0 +1,20 @@
+[Unit]
+Description=Prospection B2B — API + front (uvicorn, 127.0.0.1:8000)
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/prospection-b2b
+Environment=PYTHONPATH=.
+# deploy.serve compose api.main + le front dist/ (same-origin). Le pool asyncpg est
+# créé dans le lifespan (sur la loop uvicorn), .env lu depuis WorkingDirectory.
+ExecStart=/opt/prospection-b2b/.venv/bin/uvicorn deploy.serve:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

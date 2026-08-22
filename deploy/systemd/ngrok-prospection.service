@@ -1,0 +1,21 @@
+[Unit]
+Description=ngrok tunnel — Prospection B2B (OAuth-gated, upstream 127.0.0.1:8000)
+After=network-online.target prospection-api.service
+Wants=network-online.target prospection-api.service
+Requires=prospection-api.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+# ngrok lit l'authtoken dans ~/.config/ngrok/ngrok.yml (ubuntu) -> HOME requis.
+Environment=HOME=/home/ubuntu
+# REMPLACER le domaine par le vôtre (ngrok dashboard -> Domains -> dev domain).
+# La policy OAuth+allowlist est générée par deploy/ngrok/gen_policy.py.
+ExecStart=/usr/local/bin/ngrok http 8000 --url https://VOTRE-DOMAINE.ngrok-free.dev --traffic-policy-file /etc/ngrok/oauth-policy.yml --log stdout --log-format logfmt
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
