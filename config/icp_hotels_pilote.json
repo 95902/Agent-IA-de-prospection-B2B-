@@ -1,0 +1,17 @@
+{
+  "nom_entreprise": "Client Pilote — Hôtellerie indépendante",
+  "secteur": "Hôtellerie indépendante",
+  "produit_vendu": "Solution SaaS de gestion hôtelière",
+  "zone_intervention": "Île-de-France (Paris & Hauts-de-Seine)",
+  "nom": "Hôtels indépendants — Paris & Hauts-de-Seine (pilote #35)",
+  "description_icp": "Hôtels indépendants et hébergements touristiques assimilés exploités en entreprise (hôtels de tourisme, hôtels de charme / boutique-hôtels, appart-hôtels, auberges de jeunesse) — structures de 2 à 50 salariés, en activité depuis au moins 2 ans, à Paris (75) et dans les Hauts-de-Seine (92). Cible les exploitants indépendants ayant une réception / des réservations à gérer ; exclut les chaînes, franchises et groupes hôteliers ainsi que les résidences de tourisme et para-hôtelières.",
+  "codes_naf": ["5510Z", "5520Z"],
+  "departements": ["75", "92"],
+  "effectif_min": 2,
+  "effectif_max": 50,
+  "anciennete_min_ans": 2,
+  "exiger_site_web": false,
+  "exiger_email": false,
+  "mots_cles_positifs": ["hotel", "hotellerie", "hebergement", "chambres", "tourisme", "sejour", "reservation", "boutique-hotel", "auberge", "hostel"],
+  "mots_cles_negatifs": ["groupe", "chaine", "franchise", "residence", "residences", "camping"]
+}
