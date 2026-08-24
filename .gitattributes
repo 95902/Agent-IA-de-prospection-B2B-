@@ -10,3 +10,11 @@
 # permanence dans `git status` sans diff réel. On force LF pour matcher
 # ce que le codegen écrit réellement.
 src/routeTree.gen.ts text eol=lf
+
+# Artefacts de déploiement lus/exécutés sous Linux (VPS) — forcer LF.
+# Le piège CRLF (git archive / autocrlf Windows) casse units systemd & scripts ; cf. CLAUDE.md.
+deploy/serve.py            text eol=lf
+deploy/ngrok/*.py          text eol=lf
+deploy/ngrok/*.yml         text eol=lf
+deploy/ngrok/*.txt         text eol=lf
+deploy/systemd/*.service   text eol=lf

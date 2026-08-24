@@ -8,6 +8,10 @@ agents.md
 .env.*
 !.env.example
 
+# ngrok : emails autorisés réels + policy générée = jamais committés
+# (seuls les *.example sont versionnés — cf. docs/DEPLOY_FRONT_NGROK.md)
+deploy/ngrok/allow_emails.txt
+deploy/ngrok/oauth-policy.yml
 
 # Logs
 logs

@@ -1,0 +1,12 @@
+# EXEMPLE de policy générée par gen_policy.py.
+# La vraie (oauth-policy.yml) est gitignorée — ne jamais committer d'emails réels.
+# Google OAuth + allowlist insensible à la casse ; tout email hors liste => 403.
+on_http_request:
+  - actions:
+      - type: oauth
+        config:
+          provider: google
+  - expressions:
+      - "!(actions.ngrok.oauth.identity.email.lowerAscii() in ['prenom.nom@gmail.com', 'coequipier@gmail.com'])"
+    actions:
+      - type: deny

@@ -1,0 +1,5 @@
+# Une adresse email autorisée par ligne. Lignes vides et lignes # ignorées.
+# Copier ce fichier en  allow_emails.txt  (gitignoré) et y mettre les vraies adresses.
+# Le match est insensible à la casse. Cap ngrok gratuit : 5 utilisateurs / mois.
+prenom.nom@gmail.com
+coequipier@gmail.com
