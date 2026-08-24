@@ -1,0 +1,35 @@
+name: CI
+
+# Tests unitaires sur chaque PR + push sur main. Les tests @integration
+# (Postgres/Qdrant/Ollama/Claude réels + crédits) sont EXCLUS — ils tournent
+# en local / sur le VPS, jamais en CI. Objectif : rendre le « vert » vérifié,
+# pas mémorisé (cf. échelle Cherny Parallèle -> Autonomie, CLAUDE.md).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: pytest (unitaires)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Tests unitaires (integration exclus)
+        run: python -m pytest -m "not integration" -q
