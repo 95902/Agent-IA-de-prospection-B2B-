@@ -157,9 +157,10 @@ PYTHONPATH=. $V main.py --campagne-id <CAMPAGNE_ID> --limit 100
 
 ---
 
-## 8. Automatisation (cron) 🛠️ — issues #34 / #41
+## 8. Automatisation (cron) 🛠️ — issues #34 / #38 / #41
 
-`crontab -e` (utilisateur `deploy`) :
+`crontab -e` (utilisateur applicatif — **sur le VPS OVH actuel c'est `ubuntu`**, pas `deploy` ;
+c'est là que tournent déjà backup + purge RGPD) :
 
 ```cron
 # Campagne hebdomadaire — lundi 6h (#34)
@@ -170,14 +171,24 @@ PYTHONPATH=. $V main.py --campagne-id <CAMPAGNE_ID> --limit 100
 
 # Purge RGPD — quotidien 3h (#41, OBLIGATION LÉGALE dès la prod)
 0 3 * * *  cd /opt/prospection-b2b && make purge-rgpd >> /var/log/prospection/purge_rgpd.log 2>&1
+
+# Rapport hebdo KPIs par email (Brevo) — lundi 8h (#38)
+0 8 * * 1  cd /opt/prospection-b2b && PYTHONPATH=. .venv/bin/python scripts/rapport_hebdo.py --send >> /var/log/prospection/rapport_hebdo.log 2>&1
 ```
 
 ```bash
-sudo mkdir -p /var/log/prospection && sudo chown deploy:deploy /var/log/prospection
+sudo mkdir -p /var/log/prospection && sudo chown "$USER":"$USER" /var/log/prospection
 ```
 
 > 🔴 **Le job de purge RGPD (#41) doit être actif dès la mise en service** — pas après. Sans lui,
 > la rétention légale (LEGAL.md) n'est pas appliquée.
+
+> ℹ️ **Rapport hebdo (#38)** — le script `scripts/rapport_hebdo.py --send` lit la BDD et envoie
+> **un** email via Brevo (`BREVO_API_KEY` + `RAPPORT_EMAIL_FROM` / `RAPPORT_EMAIL_TO` dans `.env`).
+> **0 crédit externe** consommé (aucun Tavily / Claude / INSEE). Sans clé ni destinataire, le
+> script imprime le rapport et **n'envoie rien**. Le crontab réellement installé sur le VPS
+> (utilisateur `ubuntu`) utilise `.venv/bin/python` en direct plutôt que les raccourcis `make` —
+> voir le relevé daté dans [`ACCEPTANCE_RAPPORT_HEBDO_38.md`](ACCEPTANCE_RAPPORT_HEBDO_38.md).
 
 ---
 
