@@ -16,7 +16,7 @@ export const HeaderPropspect = () => {
         <Button variant="outline" className="rounded-lg">
           <Calendar /> Les 30 derniers jours
         </Button>
-        <Button className="rounded-lg">
+        <Button disabled title="À venir" className="rounded-lg">
           <Download /> Exporter le report
         </Button>
       </div>

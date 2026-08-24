@@ -28,6 +28,9 @@ import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
 import type { ColumnConfig } from "@/components/DesktopTable";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getProspects } from "@/lib/api";
+import { prospectToCompanyData } from "@/lib/adapters";
 
 export interface CompanyData {
   id: string;
@@ -42,77 +45,54 @@ export interface CompanyData {
   scoringPercentage: number;
   lastContactDate: string;
   lastContactType: string;
+  contactable: boolean;
 }
 
-export const companyTableSeed: CompanyData[] = [
-  {
-    id: "1",
-    companyName: "Vercel Inc.",
-    contactName: "Guillermo Rauch",
-    location: "SF, USA",
-    logoLetter: "V",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "6201Z",
-    scoringStatus: "Hot",
-    scoringPercentage: 92,
-    lastContactDate: "Oct 24, 2023",
-    lastContactType: "Email Follow-up",
-  },
-  {
-    id: "2",
-    companyName: "Stripe Ltd.",
-    contactName: "John Collison",
-    location: "Dublin, IE",
-    logoLetter: "S",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "4619B",
-    scoringStatus: "Warm",
-    scoringPercentage: 78,
-    lastContactDate: "Oct 23, 2023",
-    lastContactType: "LinkedIn Connect",
-  },
-  {
-    id: "3",
-    companyName: "Anthropic AI",
-    contactName: "Dario Amodei",
-    location: "Palo Alto",
-    logoLetter: "A",
-    logoBgColor: "bg-slate-200 dark:bg-slate-800",
-    logoTextColor: "text-slate-700 dark:text-slate-300",
-    nafCode: "6201Z",
-    scoringStatus: "Cold",
-    scoringPercentage: 34,
-    lastContactDate: "Oct 19, 2023",
-    lastContactType: "Initial Outreach",
-  },
-  {
-    id: "4",
-    companyName: "Figma Design",
-    contactName: "Dylan Field",
-    location: "SF",
-    logoLetter: "F",
-    logoBgColor: "bg-indigo-100 dark:bg-indigo-950",
-    logoTextColor: "text-indigo-600 dark:text-indigo-400",
-    nafCode: "7022Z",
-    scoringStatus: "Hot",
-    scoringPercentage: 88,
-    lastContactDate: "Oct 25, 2023",
-    lastContactType: "Phone Call",
-  },
-];
+export interface ProspectFilters {
+  contactableOnly?: boolean;
+  departements?: string[];
+  codeNaf?: string;
+}
 
 const prospectColumns: ColumnConfig[] = [
   { key: "checkbox", label: "" },
   { key: "company", label: "Nom de la compagnie" },
   { key: "status", label: "Code NAF" },
   { key: "score", label: "Notation", className: "w-[200px]" },
-  { key: "value", label: "Dernier contact" },
+  { key: "value", label: "Joignabilité" },
 ];
 
-export const ProspectsTable = () => {
-  const data = companyTableSeed;
+export const ProspectsTable = ({
+  filters,
+}: {
+  filters?: ProspectFilters;
+} = {}) => {
+  // Slice 2 (#116) : données réelles depuis l'API au lieu du mock.
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["prospects", { limit: 200 }],
+    queryFn: () => getProspects({ limit: 200 }),
+  });
+  // Filtres appliqués côté client sur l'ensemble chargé (#116).
+  const rows = (page?.items ?? []).filter((p) => {
+    if (filters?.contactableOnly && !(p.telephone || p.email)) return false;
+    if (
+      filters?.departements?.length &&
+      !filters.departements.includes(p.departement ?? "")
+    )
+      return false;
+    if (
+      filters?.codeNaf &&
+      !(p.code_naf ?? "").replace(".", "").startsWith(filters.codeNaf)
+    )
+      return false;
+    return true;
+  });
+  const data: CompanyData[] = rows.map(prospectToCompanyData);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowPerPage, setRowPerPage] = useState(10);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(
@@ -120,7 +100,9 @@ export const ProspectsTable = () => {
   );
 
   const totalPages = Math.max(1, Math.ceil(data.length / rowPerPage));
-  const startIndex = (currentPage - 1) * rowPerPage;
+  // Clamp : un filtre qui réduit la liste ne doit pas laisser une page vide.
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * rowPerPage;
   const endIndex = startIndex + rowPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
   const navigate = useNavigate();
@@ -165,6 +147,21 @@ export const ProspectsTable = () => {
       params: { prospectId: id },
     });
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full lg:h-full flex items-center justify-center p-8 text-sm text-muted-foreground">
+        Chargement des prospects…
+      </Card>
+    );
+  }
+  if (isError) {
+    return (
+      <Card className="w-full lg:h-full flex items-center justify-center p-8 text-sm text-rose-600">
+        Impossible de charger les prospects : {(error as Error).message}
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full lg:h-full flex flex-col justify-between overflow-hidden border rounded-lg ">
@@ -242,7 +239,15 @@ export const ProspectsTable = () => {
                   </TableCell>
                   <TableCell className="w-[25%] font-medium">
                     <div className="flex flex-col gap-1">
-                      <p>{item.lastContactDate}</p>
+                      {item.contactable ? (
+                        <span className="text-emerald-600 text-sm whitespace-nowrap">
+                          ● Joignable
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm whitespace-nowrap">
+                          ○ Pas de contact
+                        </span>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {item.lastContactType}
                       </p>

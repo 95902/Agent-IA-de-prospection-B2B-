@@ -37,7 +37,6 @@ const prospectColumns: ColumnConfig[] = [
   { key: "company", label: "COMPANY & LEAD" },
   { key: "status", label: "STATUS" },
   { key: "score", label: "LEAD SCORE", className: "w-[200px]" },
-  { key: "value", label: "VALUE" },
   { key: "actions", label: "ACTIONS", className: "w-12 text-center" },
 ];
 export const DesktopTable = ({ data }: DataTableProps) => {
@@ -56,35 +55,13 @@ export const DesktopTable = ({ data }: DataTableProps) => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  const getProgressColor = (status: PropspectTableProps["status"]) => {
-    switch (status) {
-      case "Qualified":
-        return "bg-emerald-600";
-      case "Negotiation":
-        return "bg-blue-600";
-      case "High Priority":
-        return "bg-rose-700";
-      case "Discovery":
-        return "bg-slate-700";
-      default:
-        return "bg-slate-700";
-    }
-  };
+  const getProgressColor = (status: PropspectTableProps["status"]) =>
+    status === "Qualified" ? "bg-emerald-600" : "bg-slate-700";
 
-  const getBadgeStyle = (status: PropspectTableProps["status"]) => {
-    switch (status) {
-      case "Qualified":
-        return "bg-emerald-50 text-emerald-800 hover:bg-emerald-50 border-emerald-200/60";
-      case "Negotiation":
-        return "bg-blue-50 text-blue-800 hover:bg-blue-50 border-blue-200/60";
-      case "High Priority":
-        return "bg-rose-50 text-rose-800 hover:bg-rose-50 border-rose-200/60";
-      case "Discovery":
-        return "bg-slate-100 text-slate-800 hover:bg-slate-100 border-slate-200/60";
-      default:
-        return "bg-slate-100 text-slate-800";
-    }
-  };
+  const getBadgeStyle = (status: PropspectTableProps["status"]) =>
+    status === "Qualified"
+      ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-50 border-emerald-200/60"
+      : "bg-slate-100 text-slate-800 hover:bg-slate-100 border-slate-200/60";
 
   return (
     <div className="w-full overflow-hidden border rounded-lg">
@@ -124,9 +101,6 @@ export const DesktopTable = ({ data }: DataTableProps) => {
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="w-[15%] font-medium">
-                {item.value.toLocaleString("fr-FR")} €
-              </TableCell>
               <TableCell className="w-[5%] text-center">
                 <Popover>
                   <PopoverTrigger render={<Button variant="outline" />}>
@@ -147,7 +121,7 @@ export const DesktopTable = ({ data }: DataTableProps) => {
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={5}>
+            <TableCell colSpan={4}>
               <div className="flex w-full items-center justify-between">
                 <p>
                   {startIndex + 1}-{Math.min(endIndex, data.length)} sur{" "}

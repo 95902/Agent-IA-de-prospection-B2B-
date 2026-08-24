@@ -41,7 +41,7 @@ export const Navigation = () => {
         })}
       </div>
       <div className="flex flex-col gap-4">
-        <Button className="rounded-md py-2">
+        <Button disabled title="À venir" className="rounded-md py-2">
           <Plus className="h-4 w-4 " />
           Importer des prospects
         </Button>

@@ -1,6 +1,8 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { getProspects } from "@/lib/api";
 
 import {
   Card,
@@ -16,83 +18,73 @@ import {
   type ChartConfig,
 } from "@/components/ui/Chart";
 
-export const description = "An area chart with a legend";
-
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+const BINS = [
+  { label: "0-19", min: 0, max: 19 },
+  { label: "20-39", min: 20, max: 39 },
+  { label: "40-59", min: 40, max: 59 },
+  { label: "60-79", min: 60, max: 79 },
+  { label: "80-100", min: 80, max: 100 },
 ];
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--chart-1)",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "var(--chart-2)",
-  },
+  count: { label: "Prospects", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
 export function ChartProspect() {
+  // Distribution réelle des score_final (2 pages pour couvrir jusqu'à 400).
+  const { data } = useQuery({
+    queryKey: ["prospects-distribution"],
+    queryFn: async () => {
+      const [a, b] = await Promise.all([
+        getProspects({ limit: 200, offset: 0 }),
+        getProspects({ limit: 200, offset: 200 }),
+      ]);
+      const items = [...a.items, ...b.items];
+      return BINS.map((bin) => ({
+        range: bin.label,
+        count: items.filter(
+          (p) => p.score_final >= bin.min && p.score_final <= bin.max,
+        ).length,
+      }));
+    },
+  });
+
   return (
     <Card className="flex-1 rounded-lg">
       <CardHeader>
-        <div className="flex items-center justify-between pt-4">
-          <div className="flex flex-col">
-            <CardTitle>Diriger l'évolution</CardTitle>
-            <CardDescription>
-              Croissance projetée contre croissance réelle au fil du temps
-            </CardDescription>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="h-4 w-4 rounded-xs bg-[#316BF3]" /> <p>Actuel</p>
-            <div className="h-4 w-4 rounded-xs bg-[#64748b]/50" /> <p>Cible</p>
-          </div>
+        <div className="flex flex-col pt-4">
+          <CardTitle>Distribution des scores</CardTitle>
+          <CardDescription>
+            Répartition des prospects par tranche de score (qualifié ≥ 60)
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <AreaChart
+          <BarChart
             accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
+            data={data ?? []}
+            margin={{ left: 12, right: 12 }}
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="range"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              width={28}
+              allowDecimals={false}
             />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="line" />}
             />
-            <Area
-              dataKey="mobile"
-              type="natural"
-              fill="white"
-              strokeWidth={2.5}
-              stroke="#64748b"
-              strokeDasharray="4 4"
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="white"
-              strokeWidth={2.5}
-              stroke="#316BF3"
-            />
-          </AreaChart>
+            <Bar dataKey="count" fill="var(--chart-1)" radius={4} />
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>
