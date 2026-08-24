@@ -79,6 +79,18 @@ class Settings(BaseSettings):
     langchain_project: str = "prospection-b2b"
     langchain_endpoint: str = ""  # vide = endpoint LangSmith cloud par défaut
 
+    # ---------- Rapport hebdo (email Brevo — #38) ----------
+    # Envoi INERTE par défaut : sans clé Brevo NI destinataire, le rapport se
+    # génère et s'imprime, mais n'est JAMAIS envoyé (pas d'email sortant sans
+    # config explicite). Brevo API v3 (header `api-key`).
+    brevo_api_key: str = ""
+    rapport_email_from: str = ""   # expéditeur vérifié côté Brevo
+    rapport_email_to: str = ""     # destinataire(s), séparés par des virgules
+    # Coûts unitaires ESTIMÉS pour le KPI coût/qualifié (#23) — approximations,
+    # pas une facturation. Knobs de coût, ajustables sans toucher au code.
+    cout_claude_par_prospect_eur: float = 0.002
+    cout_tavily_par_prospect_eur: float = 0.0   # quota gratuit 1000/mois
+
     @property
     def postgres_dsn(self) -> str:
         return (
