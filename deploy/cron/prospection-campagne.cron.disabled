@@ -1,0 +1,22 @@
+# =============================================================================
+# #34 — Cron campagne hebdomadaire (lundi 6h). ÉTAT : DÉSACTIVÉ.
+# =============================================================================
+# CE FICHIER N'EST PAS INSTALLÉ. Il consomme des crédits (INSEE + Tavily + Claude)
+# à CHAQUE tirage → à activer SEULEMENT par John, APRÈS le 1er sept (reset Tavily),
+# avec un --limit borné et un CAMPAGNE_ID d'une campagne EXISTANTE.
+#
+# La ligne active est volontairement COMMENTÉE : ce fichier chargé tel quel
+# (`crontab prospection-campagne.cron.disabled`) n'installe donc AUCUN job.
+#
+# POUR ACTIVER (cf. docs/RUNBOOK_35_34_SEPT1.md, Partie 2) :
+#   1. Obtenir un UUID de campagne existante : .venv/bin/python main.py --list-campagnes
+#   2. `crontab -e` (utilisateur ubuntu sur le VPS)
+#   3. Coller la ligne ci-dessous SANS le "#", en remplaçant <CAMPAGNE_ID>
+#      et en bornant le --limit (ex. 200 pour rester sous le quota Tavily gratuit).
+#   4. Vérifier : crontab -l | grep run_campagne
+#
+# Prérequis logs : /var/log/prospection existe déjà (backup/purge/rapport y écrivent).
+# Rotation : installer deploy/logrotate/prospection (cf. runbook).
+# -----------------------------------------------------------------------------
+
+# 0 6 * * 1  /opt/prospection-b2b/scripts/run_campagne.sh <CAMPAGNE_ID> 500 >> /var/log/prospection/campagne.log 2>&1
