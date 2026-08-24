@@ -1,0 +1,17 @@
+{
+  "nom_entreprise": "Client Test — Agences de communication",
+  "secteur": "Communication et publicite",
+  "produit_vendu": "Solution SaaS de gestion de projets et de facturation pour agences",
+  "zone_intervention": "Ile-de-France",
+  "nom": "Agences de communication independantes — cible de test",
+  "description_icp": "Agences de communication et de publicite independantes (non affiliees a un grand reseau ou holding), petites et moyennes structures de 2 a 50 salaries, en activite depuis au moins 2 ans, a Paris et en proche couronne.",
+  "codes_naf": ["7311Z"],
+  "departements": ["75", "92"],
+  "effectif_min": 2,
+  "effectif_max": 50,
+  "anciennete_min_ans": 2,
+  "exiger_site_web": false,
+  "exiger_email": false,
+  "mots_cles_positifs": ["communication", "publicite", "agence", "marketing", "branding", "digital", "creation", "strategie", "design", "medias"],
+  "mots_cles_negatifs": ["groupe", "reseau", "holding", "regie"]
+}
