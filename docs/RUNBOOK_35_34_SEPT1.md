@@ -22,6 +22,32 @@ mergée et présente sur le VPS, services up (postgres/qdrant/ollama/metabase he
 
 ---
 
+## ✅ PRÉ-CÂBLÉ le 24/08 — le 1er sept se réduit à UNE commande
+
+Les 2 étapes gratuites (créer la campagne + embedding) **ont déjà été exécutées** (0 crédit).
+La campagne pilote existe en base en **`brouillon`** (collectés 0 / qualifiés 0 = rien lancé),
+son ICP est embarqué dans Qdrant.
+
+| | Valeur |
+|---|---|
+| **CAMPAGNE_ID** | **`b3d7b46e-110f-49e8-adbc-aaed7f9faa9c`** |
+| client_id | `ae951e03-813e-4ef5-850f-a8fdec5afa3e` |
+| icp_profile_id | `9a2dfa37-f842-48fd-bf68-0329c7b0f78b` (embedding `nomic-embed-text`, 768 dims) |
+
+**→ Le 1er sept (après GO de John), UNE SEULE commande sur le VPS (⚠️ consomme les crédits) :**
+
+```bash
+cd /opt/prospection-b2b && ./scripts/run_campagne.sh b3d7b46e-110f-49e8-adbc-aaed7f9faa9c 500
+```
+
+> Puis export CSV (gratuit) — cf. §« Export CSV » plus bas (mettre `campagne_id='b3d7b46e-…'`).
+> Retrouver l'id à tout moment : `.venv/bin/python main.py --list-campagnes` (ligne « pilote #35 »).
+> ⚠️ **Ne PAS re-créer la campagne** le 1er sept (la §« Séquence » ci-dessous, étapes 1–2, est déjà
+> faite) — sinon on crée un doublon client+campagne. Si tu veux repartir de zéro (ex. vrai client),
+> re-crée et relance `init_icp`.
+
+---
+
 ## Accès VPS (rappel)
 
 ```bash
@@ -64,6 +90,10 @@ payeur, pas les prospects (= les hôtels indépendants, définis par `criteres_c
 
 ## Séquence de lancement (sur le VPS, dans `/opt/prospection-b2b`)
 
+> **NB : les étapes 1–2 sont DÉJÀ FAITES** (pré-câblées le 24/08, cf. encart ✅ ci-dessus,
+> `CAMPAGNE_ID = b3d7b46e-110f-49e8-adbc-aaed7f9faa9c`). Le 1er sept, sauter directement à
+> l'**étape 3**. La séquence complète ci-dessous ne sert qu'à **repartir de zéro** (ex. vrai client).
+>
 > Étapes 1 et 2 = **GRATUITES** (0 crédit). Étape 3 = **la seule action qui consomme des crédits.**
 
 ```bash
@@ -151,7 +181,8 @@ Fichier : [`deploy/cron/prospection-campagne.cron.disabled`](../deploy/cron/pros
 
 ```cron
 # Campagne hebdomadaire — lundi 6h (#34). DÉSACTIVÉ tant que non voulu (consomme des crédits).
-# Remplacer <CAMPAGNE_ID> par l'UUID d'une campagne EXISTANTE (créée gratuitement, cf. Partie 1 §1).
+# <CAMPAGNE_ID> = UUID d'une campagne EXISTANTE. La campagne pilote pré-câblée
+# (b3d7b46e-110f-49e8-adbc-aaed7f9faa9c) peut être réutilisée, OU en créer une dédiée (cf. Partie 1 §1).
 0 6 * * 1  /opt/prospection-b2b/scripts/run_campagne.sh <CAMPAGNE_ID> 500 >> /var/log/prospection/campagne.log 2>&1
 ```
 
@@ -185,13 +216,12 @@ sudo logrotate --debug /etc/logrotate.d/prospection   # vérif à sec, n'écrit 
 
 1. **Identité du client réel** — *statut : ouvert (aucune société externe, run de validation produit).*
    Le placeholder suffit pour valider le produit ; à remplacer avant un pilote **commercial**.
-2. **Le GO du 1er sept** — lancer l'étape 3 (`run_campagne.sh "$CAMPAGNE_ID" 500`). C'est la seule
-   action qui consomme des crédits. Personne ne la lance sans ton feu vert.
+2. **Le GO du 1er sept** — lancer l'unique commande payante :
+   `run_campagne.sh b3d7b46e-110f-49e8-adbc-aaed7f9faa9c 500`. Personne ne la lance sans ton feu vert.
 3. **Activer ou non le cron hebdo #34** — après le 1er sept, avec un `--limit` borné. Désactivé par défaut.
-4. *(Optionnel)* **Pré-câbler pour un « one-shot » le 1er sept** — je peux exécuter **maintenant** les
-   étapes 1–2 (gratuites) pour figer un `CAMPAGNE_ID` concret, de sorte que le 1er sept se réduise à
-   **une seule commande** (étape 3). Non fait par défaut (écrit une ligne campagne placeholder en prod).
-   Dis‑le si tu le veux.
+4. ✅ **Pré-câblage « one-shot » — FAIT le 24/08** (étapes 1–2 gratuites exécutées ;
+   `CAMPAGNE_ID = b3d7b46e-110f-49e8-adbc-aaed7f9faa9c`, campagne en `brouillon`, embedding OK).
+   Le 1er sept = une seule commande. *(Si tu préfères un vrai client d'abord : re-créer + `init_icp`.)*
 
 ---
 
@@ -204,3 +234,6 @@ sudo logrotate --debug /etc/logrotate.d/prospection   # vérif à sec, n'écrit 
 - `curl 127.0.0.1:8000/api/health` = `{"status":"ok"}` ; `docker ps` = postgres/qdrant/ollama/metabase up ;
   Ollama joignable (init_icp OK).
 - `/var/log/prospection/` existe (backup/purge/rapport logs) ; pas encore de `campagne.log` (cron jamais lancé).
+- **Pré-câblage 24/08 (0 crédit) :** `POST /api/campagnes` → `campagne_id=b3d7b46e-110f-49e8-adbc-aaed7f9faa9c` ;
+  `init_icp` → embedding `nomic-embed-text` 768 dims (`qdrant_point_id=9a2dfa37-…`) ; DB confirme
+  `statut=brouillon, collectés=0, qualifiés=0` (aucun run). `logrotate --debug` du fichier prospection = OK.
