@@ -6,8 +6,10 @@
 > **ce qui l'a livrée** et **comment ça a été vérifié**. **Mesuré sur le VPS, pas déclaré.**
 >
 > Preuves live datées du **2026-08-24** (VPS OVH, services `prospection-api` /
-> `ngrok-prospection` / conteneur `metabase`). Clôture des trois issues **au merge de cette
-> PR** (décision équipe, même schéma que [`DEPLOY_ACCEPTANCE.md`](DEPLOY_ACCEPTANCE.md) / #33).
+> `ngrok-prospection` / conteneur `metabase`). Cette PR **clôt #37 et #116** au merge (décision
+> équipe, même schéma que [`DEPLOY_ACCEPTANCE.md`](DEPLOY_ACCEPTANCE.md) / #33). **#39 est
+> documentée mais volontairement gardée OUVERTE** jusqu'à la 1ʳᵉ campagne réelle de 500 (voir
+> plus bas) — cette PR ne la clôt donc pas (`Refs #39`, pas `Closes`).
 
 ---
 
@@ -65,16 +67,21 @@ supersède #117 — merge `40ae581`) + **#120** (déploiement front+API via `dep
   qualifiés s'érode (`POST /outcome` mute `statut`, mais les KPI comptent `statut='qualifie'`) —
   et le **plan Phase 2** priorisé.
 
-**Statut : ✅ rétrospective livrée.**
-> ⚠️ Le **§8 (plan Phase 2)** reste à **ratifier par l'équipe** : c'est un point d'agenda, pas
-> un bloqueur de livraison. Les **actions correctives** identifiées (allumer `osm_tags`, compter
-> les qualifiés par `score_final ≥ 60`, écrire de vraies lignes `appels`) sont suivies en Phase 2,
-> pas dans cette issue.
+**Statut : ✅ rétrospective livrée — 🔶 issue #39 volontairement gardée OUVERTE.**
+> **Pourquoi ne pas fermer #39 maintenant** : la rétro mesure une **config dégradée** (OSM éteint
+> sur les 3 campagnes — `osm_tags` vide) ; ses conclusions et le **plan Phase 2** ne seront
+> **validés qu'après la 1ʳᵉ vraie campagne de 500** (#35, OSM activé, à partir du 1ᵉʳ sept). On
+> garde donc **#39 comme point d'ancrage** — la fermer une fois le premier run réel mesuré **et**
+> le §8 ratifié en équipe. Cette PR **documente** la livraison de la rétro sans la clôturer.
+>
+> Les **actions correctives** identifiées (allumer `osm_tags`, compter les qualifiés par
+> `score_final ≥ 60`, écrire de vraies lignes `appels`) sont suivies en Phase 2 / #35.
 
 ---
 
 ## Portée
 
 - **Document uniquement**, base `main`, PR autonome (une PR = une base `main`).
-- `Closes #37`, `Closes #116`, `Closes #39` **au merge** (décision équipe — ne pas fermer avant review).
+- `Closes #37`, `Closes #116` **au merge** (décision équipe — ne pas fermer avant review).
+- **`Refs #39`** seulement : #39 **reste ouverte** jusqu'à la 1ʳᵉ campagne réelle de 500 (#35) — à re-clôturer après le premier run mesuré + ratification du §8.
 - Hors périmètre, suivis ailleurs : #38 (cron rapport hebdo, PR dédiée), #34 (cron campagne, gaté crédits), #35 (1ʳᵉ campagne réelle).
