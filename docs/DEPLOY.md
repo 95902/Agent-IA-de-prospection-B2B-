@@ -222,6 +222,42 @@ gunzip -c /opt/backups/AAAAMMJJ-HHMM.sql.gz | \
 
 ---
 
+## 12. Dashboard Metabase (#37) — accès par tunnel SSH 🛠️
+
+Metabase (profil `monitoring`) est **lié à `127.0.0.1` en prod** (`docker-compose.prod.yml`).
+⚠️ Docker publie ses ports via iptables et **contourne `ufw`** : le bind `127.0.0.1` est ce qui
+garde le port 3000 **inaccessible hors du VPS** (à re-vérifier au scan externe, comme 5432/6333).
+
+```bash
+# Sur le VPS — démarrer Metabase (les autres services ne sont pas touchés)
+cd /opt/prospection-b2b
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  --profile monitoring up -d metabase
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps metabase   # healthy ?
+```
+
+Metabase n'écoutant que sur `127.0.0.1`, on l'atteint **depuis le poste local par un tunnel SSH** :
+
+```bash
+# Sur le poste local — ouvre localhost:3000 -> 127.0.0.1:3000 du VPS
+ssh -i <clé> -L 3000:localhost:3000 <user>@<vps-ip>
+# puis http://localhost:3000 dans le navigateur
+```
+
+**Première connexion (assistant, dans le navigateur)** — à faire par un humain :
+
+1. Créer le compte **admin** Metabase (email + mot de passe — *jamais* via un script).
+2. **Ajouter la base de données** à explorer :
+   - Type : **PostgreSQL**
+   - Host : `postgres` (nom du service — Metabase et Postgres sont sur le même réseau Docker `prospection_net`)
+   - Port : `5432` · Database : `prospection_b2b` · User : `scraper` · Password : celui de `.env` (`POSTGRES_PASSWORD`).
+3. Construire les dashboards KPIs (mêmes métriques que le rapport `#38` : collectés/qualifiés, taux tél/email, score moyen, coût/qualifié — cf. PRD §6).
+
+> Les données Metabase (dashboards, comptes) persistent dans le volume `prospection_b2b_metabase_data`
+> (H2 embarqué). Pour arrêter : `docker compose ... --profile monitoring stop metabase`.
+
+---
+
 ### Récap des dépendances
 
 `#33 (ce runbook)` débloque `#35 (1re campagne)`. `#41 (purge RGPD)` se déploie **avec** la stack

@@ -33,3 +33,14 @@ services:
     ports: !override
       - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
     restart: always
+
+  # Metabase (dashboard KPIs, profil monitoring, #37) — lié à 127.0.0.1 comme les
+  # autres. ⚠️ Docker publie ses ports via iptables et CONTOURNE ufw : sans ce
+  # bind, le port 3000 serait joignable hors du VPS MALGRÉ le pare-feu. Accès en
+  # prod par tunnel SSH uniquement (cf. DEPLOY.md §12). Démarrer avec le profil :
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  #     --profile monitoring up -d metabase
+  metabase:
+    ports: !override
+      - "127.0.0.1:${METABASE_PORT:-3000}:3000"
+    restart: always
