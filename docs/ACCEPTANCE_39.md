@@ -42,10 +42,27 @@ persistés) : **499/500 scorings LLM réels, 1 repli, 0 erreur.**
 2. **La leçon « fusionné ≠ actif » est désormais outillée** : l'incident clé-expirée a produit un
    **garde-fou préflight** (sonde Anthropic + Tavily + INSEE, annule le run si une clé casse) — **PR #128**.
 
+## MàJ 2026-09-01 — tests de suivi (affine la conclusion 1)
+
+Après le pilote, une série de tests a **corrigé la conclusion 1** (goulot = scoring → **goulot = joignabilité**) :
+
+- **Recompute des 500 (0 crédit)** : reweighter vers Claude double les qualifiés-fit (72 → 137) mais les qualifiés
+  **joignables** restent ~55. Le **taux actionnable = fit ≥ 60 ET joignable (email/tél) ≈ 11 %** et **ne bouge PAS
+  avec les poids**. → le goulot n'est **pas** le scoring.
+- **Vrai goulot = la JOIGNABILITÉ** (couverture contact 22 %), qui suit la **taille / visibilité**, pas le secteur.
+- **Test secteur** (agences immo 6831Z, 150) : pire — actionnable **2 %** (NAF « sale », beaucoup de SCI/holdings).
+- **Test taille** (hôtels effectif ≥ 10, 150, via **PR #130**) : actionnable **19,3 %** (~×2), joignables **33 %**
+  (vs 22), qualifiés fit≥60 **24,7 %** (vs 14,4). ✅
+
+**Conclusion Phase 2 corrigée** : le levier du rendement actionnable est de **cibler des établissements ÉTABLIS
+(effectif ≥ 10)** et des secteurs riches en présence numérique — **pas** de recalibrer le scoring. Redéfinir
+« qualifié » = **fit ET joignable**. ICP gagnant testé = **hôtels effectif ≥ 10** (cf. PR #130). Levier crédits
+restant : renouveler Pappers pour enrichir les ~78 % non joignables.
+
 ## Portée
 
 - **Document uniquement**, base `main`, PR autonome. **`Closes #39` au merge** (décision équipe).
 - Remplace la mise en attente `Refs #39` de la PR #125 : la condition (1ᵉʳ vrai run de 500 mesuré) est
   remplie. Le **§8 (plan Phase 2)** peut être ratifié dans cette même review.
-- Suivis ailleurs : calibrage ICP/scoring (Phase 2), garde-fou préflight (#128), éventuelle campagne
-  de re-mesure (autre ICP / N réduit).
+- Suivis ailleurs : **cibler établissements établis / joignabilité** (Phase 2 — cf. MàJ ci-dessus, PR #130),
+  garde-fou préflight (#128), renouvellement Pappers pour l'enrichissement.
