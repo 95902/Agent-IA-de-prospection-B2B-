@@ -25,5 +25,16 @@ cd "$(dirname "$0")/.."
 PY="${PYTHON:-python3}"
 [ -x .venv/bin/python ] && PY=.venv/bin/python
 
+# Garde-fou préflight : refuse de démarrer si une API payante est cassée — p.ex. une
+# clé Anthropic expirée fait basculer TOUT le scoring en repli règles-only *sans erreur
+# pipeline* (« 0 erreur » ≠ « a marché »). Sonde Anthropic + Tavily + INSEE.
+# Court-circuit exceptionnel : PREFLIGHT_SKIP=1 ./scripts/run_campagne.sh ...
+if [ "${PREFLIGHT_SKIP:-0}" != "1" ]; then
+  if ! env PYTHONPATH=. "$PY" scripts/preflight.py; then
+    echo "[run_campagne] PRÉFLIGHT ÉCHOUÉ — run annulé. Corrige la/les clé(s) .env, ou PREFLIGHT_SKIP=1 pour forcer." >&2
+    exit 1
+  fi
+fi
+
 exec env PYTHONPATH=. PYTHONIOENCODING=utf-8 \
   "$PY" main.py --campagne-id "$CAMPAGNE_ID" --limit "$LIMIT"
