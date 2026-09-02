@@ -1,7 +1,7 @@
-# Relevé d'acceptance — #35 (1ʳᵉ campagne 500) + #36 (Airtable)
+# Relevé d'acceptance — #35 (1ʳᵉ campagne 500) + #34 (cron campagnes)
 
-> Clôture de **#35** (première campagne réelle de 500 prospects) et confirmation de **#36**
-> (synchronisation Airtable, déjà close via PR #122). **Mesuré, pas déclaré.**
+> Clôture de **#35** (première campagne réelle de 500 prospects) et de **#34** (cron campagnes
+> automatiques — **configuré, volontairement désactivé**). **Mesuré, pas déclaré.**
 
 ## #35 — Première campagne réelle (500 prospects, pilote)
 
@@ -40,15 +40,20 @@ réels**. Cet incident a produit le garde-fou préflight (#128) et le constat «
   (effectif ≥ 10) ~double l'actionnable** (19,3 %). Détail : `docs/ACCEPTANCE_39.md` + filtre taille
   `scripts`/`sirene_agent.py` (#130).
 
-## #36 — Synchronisation prospects qualifiés → Airtable
+## #34 — Cron campagnes automatiques (lundi 6h)
 
-**Déjà livré et clos** via PR **#122** (`feat/airtable-sync-36`, `Closes #36`). Confirmé ici pour
-complétude :
-- `scripts/sync_airtable.py` **présent sur `main`** — upsert idempotent (clé SIRET) + dédup, batché/async.
-- **Testé sur le vrai VPS** : 27 enregistrements **créés** puis 27 **mis à jour** (idempotence vérifiée).
-- 🔒 **RGPD** : PII → SaaS US (Airtable) = acceptable en MVP ; à durcir (DPA / minimisation) avant usage commercial.
+**Configuré, volontairement DÉSACTIVÉ.** La configuration a été livrée via PR **#127** (vérifiée sur `main`) :
+- `deploy/cron/prospection-campagne.cron.disabled` — la ligne cron (lundi 6h,
+  `run_campagne.sh <id> 500`) **en commentaire = inerte**, prête à activer.
+- `docs/RUNBOOK_35_34_SEPT1.md` — runbook d'activation (décommenter + `crontab`) + logrotate validé.
+
+🔴 **Volontairement non activé** : un cron campagne consomme des crédits (INSEE + Tavily + Claude) à
+chaque run. Il ne doit être activé qu'avec un **ICP validé**, un `--limit` borné et un **feu vert crédits
+explicite** — décision métier, pas une tâche de configuration. La **configuration (#34) est donc livrée** ;
+l'activation reste gatée (et désormais protégée par le préflight #128).
 
 ## Portée
 
-- **Document uniquement**, base `main`, PR autonome. **`Closes #35` au merge** (décision équipe).
-- **#36 est déjà clos** (PR #122) — ce relevé le confirme, sans le rouvrir.
+- **Document uniquement**, base `main`, PR autonome. **`Closes #35` et `Closes #34` au merge** (décision équipe).
+- #34 est clos comme **« cron configuré + documenté »** ; son **activation** reste une décision crédits séparée.
+- *(Pour mémoire : #36 Airtable est déjà clos via PR #122 — hors périmètre de ce relevé.)*
