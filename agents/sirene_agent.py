@@ -54,13 +54,36 @@ def _naf_avec_point(naf: str) -> str:
     return f"{naf[:2]}.{naf[2:]}"
 
 
-def _build_query(naf: str, dept: str) -> str:
-    """Requête `q` correcte : champs période enveloppés dans `periode(...)`."""
-    return (
+def _tranches_effectif(effectif_min: int | None, effectif_max: int | None) -> list[str]:
+    """Codes de tranche INSEE couvrant `[effectif_min, effectif_max]`, pour filtrer la
+    collecte par TAILLE (meilleure joignabilité — la couverture contact suit la taille).
+
+    **Opt-in, non cassant** : renvoie `[]` (aucun filtre = comportement historique, on
+    collecte AUSSI les effectifs inconnus) tant que `effectif_min < 10`. À partir de 10, on
+    restreint aux établissements dont la tranche `trancheEffectifsUniteLegale` chevauche la
+    fourchette — ce qui exclut de fait les effectifs inconnus/micro. Voir `_build_query`."""
+    if not effectif_min or effectif_min < 10:
+        return []
+    hi = effectif_max or 10 ** 9
+    return sorted(
+        code for code, (_lbl, borne) in EFFECTIF_TRANCHES.items()
+        if effectif_min <= borne <= hi
+    )
+
+
+def _build_query(naf: str, dept: str, tranches: list[str] | None = None) -> str:
+    """Requête `q` correcte : champs période enveloppés dans `periode(...)`.
+
+    `tranches` (optionnel) = codes `trancheEffectifsUniteLegale` pour cibler par taille
+    (cf. `_tranches_effectif`). Champ UL non historicisé → hors du `periode(...)`."""
+    q = (
         f"periode(activitePrincipaleEtablissement:{_naf_avec_point(naf)} "
         f"AND etatAdministratifEtablissement:A) "
         f"AND codePostalEtablissement:{dept}*"
     )
+    if tranches:
+        q += " AND trancheEffectifsUniteLegale:(" + " OR ".join(tranches) + ")"
+    return q
 
 
 def _parser_etablissement(etab: dict, campagne_id) -> Prospect | None:
@@ -112,11 +135,13 @@ def _parser_etablissement(etab: dict, campagne_id) -> Prospect | None:
 
 
 async def _fetch_etablissements(
-    client: httpx.AsyncClient, headers: dict, dept: str, naf: str, limit: int
+    client: httpx.AsyncClient, headers: dict, dept: str, naf: str, limit: int,
+    tranches: list[str] | None = None,
 ) -> list[dict]:
     """Pagine l'API pour un couple (dept, naf) jusqu'à `limit` établissements ou
-    épuisement. Gère le 429 (retry ×3) et le throttle 30 req/min."""
-    query = _build_query(naf, dept)
+    épuisement. Gère le 429 (retry ×3) et le throttle 30 req/min. `tranches` filtre
+    éventuellement par taille (cf. `_tranches_effectif`)."""
+    query = _build_query(naf, dept, tranches)
     collected: list[dict] = []
     debut = 0
     while len(collected) < limit:
@@ -166,6 +191,12 @@ async def sirene_node(state: EtatAgent, limit: int = 500) -> EtatAgent:
 
     headers = {"X-INSEE-Api-Key-Integration": api_key, "Accept": "application/json"}
     prospects: list[Prospect] = list(state.get("prospects", []))
+    # Filtre taille à la SOURCE (opt-in : seulement si effectif_min >= 10) — meilleure
+    # joignabilité. En deçà, `tranches` vide = collecte historique (effectifs inconnus inclus).
+    tranches = _tranches_effectif(criteres.effectif_min, criteres.effectif_max)
+    if tranches:
+        logger.info("sirene_node : filtre taille tranches=%s (effectif %s-%s)",
+                    tranches, criteres.effectif_min, criteres.effectif_max)
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         for dept in criteres.departements:
@@ -175,7 +206,7 @@ async def sirene_node(state: EtatAgent, limit: int = 500) -> EtatAgent:
                 if len(prospects) >= limit:
                     break
                 reste = limit - len(prospects)
-                etabs = await _fetch_etablissements(client, headers, dept, naf, reste)
+                etabs = await _fetch_etablissements(client, headers, dept, naf, reste, tranches)
                 for etab in etabs:
                     prospect = _parser_etablissement(etab, campagne_id)
                     if prospect is not None:
