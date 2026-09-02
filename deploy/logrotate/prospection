@@ -1,0 +1,16 @@
+# Rotation des logs de prospection (#34). Préparé, à installer une fois (0 crédit) :
+#   sudo cp /opt/prospection-b2b/deploy/logrotate/prospection /etc/logrotate.d/prospection
+#   sudo logrotate --debug /etc/logrotate.d/prospection   # vérif à sec (n'écrit rien)
+#
+# Couvre campagne.log (#34), backup.log, purge_rgpd.log, rapport_hebdo.log.
+# copytruncate : les jobs écrivent en append (>>), pas de signal à envoyer.
+/var/log/prospection/*.log {
+    weekly
+    rotate 8
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su ubuntu ubuntu
+}
