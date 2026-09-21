@@ -1,5 +1,6 @@
-import { Menu, Bot, RotateCcwClock, BellDot } from "lucide-react";
-import { useState } from "react";
+import { Menu, Search } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/Button";
 import {
   Sheet,
@@ -9,70 +10,66 @@ import {
   SheetTrigger,
 } from "@/components/ui/Sheet";
 import { Navigation } from "@/components/ui/Navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
-import { Input } from "@/components/ui/Input";
+import { BrandMark } from "@/components/BrandMark";
 import { ModeToggle } from "@/components/ModeToggle";
+
+/** Recherche globale : ouvre la liste des prospects filtrée (?q=…). */
+const HeaderSearch = () => {
+  const navigate = useNavigate();
+  const [value, setValue] = useState("");
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const q = value.trim();
+    navigate({ to: "/prospects", search: q ? { q } : {} });
+  };
+
+  return (
+    <form role="search" onSubmit={onSubmit} className="w-full max-w-[480px]">
+      <label className="glass flex h-10 items-center gap-2.5 rounded-xl border px-3 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
+        <Search className="size-4 shrink-0" aria-hidden="true" />
+        <span className="sr-only">Rechercher un prospect</span>
+        <input
+          type="search"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Rechercher une entreprise, une ville, un code NAF…"
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        />
+      </label>
+    </form>
+  );
+};
 
 export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between border-b bg-background/95 backdrop-blur">
-      <div className="flex items-center">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger
-            render={
-              <Button variant="ghost" size="icon" className="md:hidden pl-4">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Navigation</span>
-              </Button>
-            }
-          />
-          <SheetContent side="left" className="w-64 p-0">
-            <SheetHeader className="p-4 text-left border-b">
-              <SheetTitle className="flex items-center gap-2">
-                <Bot className="h-6 w-6 text-primary" />
-                Agent Prospection
-              </SheetTitle>
-            </SheetHeader>
-            <Navigation />
-          </SheetContent>
-        </Sheet>
-        <div className="hidden pl-4 md:flex items-center gap-2 w-60 font-bold text-lg">
-          <Bot className="h-6 w-6 text-primary" />
-          <span className="text-nowrap">B2B Intelligence</span>
-        </div>
+    <header className="flex h-16 shrink-0 items-center gap-3 px-4 md:h-[72px] md:px-10">
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetTrigger
+          render={
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Ouvrir le menu</span>
+            </Button>
+          }
+        />
+        <SheetContent side="left" className="glass w-72 p-4">
+          <SheetHeader className="p-0 text-left">
+            <SheetTitle>
+              <BrandMark />
+            </SheetTitle>
+          </SheetHeader>
+          <Navigation showBrand={false} onNavigate={() => setMobileOpen(false)} />
+        </SheetContent>
+      </Sheet>
+      <BrandMark className="md:hidden" />
+      <div className="hidden flex-1 md:flex">
+        <HeaderSearch />
       </div>
-      <div className="hidden md:flex flex-1 px-4">
-        <Input placeholder="Rechercher..." />
-      </div>
-      <div className="flex items-center">
-        <div className="flex gap-2 items-center px-2">
-          <Button variant="ghost" size="icon">
-            <BellDot className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-          </Button>
-          <Button variant="ghost" size="icon">
-            <RotateCcwClock className="h-5 w-5" />
-          </Button>
-          <ModeToggle />
-        </div>
-        <div className="h-full flex items-center gap-2 border-l px-4">
-          <div className="flex flex-col">
-            <span className="font-semibold text-nowrap">Taupin Fabien</span>
-            <p className="text-sm text-muted-foreground text-nowrap">
-              Directeur du monde
-            </p>
-          </div>
-          <Avatar size="lg">
-            <AvatarImage
-              src="https://github.com/shadcn.png"
-              alt="@shadcn"
-              className="grayscale"
-            />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-        </div>
+      <div className="ml-auto flex items-center gap-2">
+        <ModeToggle />
       </div>
     </header>
   );

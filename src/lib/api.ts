@@ -15,6 +15,8 @@ export interface Campagne {
   statut: string;
   prospects_collectes: number;
   prospects_qualifies: number;
+  /** PR-B1 : qualifiés (score ≥ 60) ET joignables. Absent tant que l'API n'est pas à jour. */
+  actionnables?: number;
 }
 
 export interface ProspectRow {
@@ -60,6 +62,14 @@ export interface Kpis {
   pct_qualifies: number;
   score_moy_qualifies: number | null;
   cout_estime_eur: number;
+  // --- PR-B1 (lecture seule) : absents tant que l'API n'est pas à jour ---
+  /** Prospects avec score_final >= 60 (indépendant du statut d'appel). */
+  qualifies_score?: number;
+  /** Prospects avec email ou téléphone. */
+  joignables?: number;
+  /** Qualifiés (score >= 60) ET joignables. */
+  actionnables?: number;
+  pct_actionnables?: number;
 }
 
 // --- Fetch helper ----------------------------------------------------------
@@ -135,3 +145,31 @@ export const postCampagne = (payload: Record<string, unknown>) =>
     "/api/campagnes",
     payload,
   );
+
+// --- « Affiner avec l'IA » (PR API #134) -------------------------------------
+// Absent tant que l'API n'est pas à jour : le statut répond 404 et le bouton reste caché.
+export interface IcpParseStatus {
+  enabled: boolean;
+  modele: string;
+}
+
+export interface IcpParseResult {
+  codes_naf: string[];
+  departements: string[];
+  effectif_min: number | null;
+  effectif_max: number | null;
+  anciennete_min_ans: number | null;
+  exiger_site_web: boolean;
+  exiger_email: boolean;
+  mots_cles_positifs: string[];
+  mots_cles_negatifs: string[];
+  non_traduits: string[];
+  hypotheses: string[];
+  modele: string;
+  depuis_cache: boolean;
+}
+
+export const getIcpParseStatus = () => apiGet<IcpParseStatus>("/api/icp/parse/status");
+
+export const postIcpParse = (body: { phrase: string; non_traduits: string[] }) =>
+  apiPost<IcpParseResult>("/api/icp/parse", body);

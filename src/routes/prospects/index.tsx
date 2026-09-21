@@ -1,138 +1,126 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { EmptyState, ErrorState } from "@/components/States";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useAllProspects } from "@/features/dashboard/queries";
+import { FiltersPanel } from "@/features/prospects/FiltersPanel";
+import { ProspectRows } from "@/features/prospects/ProspectRows";
 import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/Field";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
-import {
-  ProspectsTable,
+  facets,
+  filterProspects,
+  hasActiveFilters,
+  paginate,
+  parseProspectSearch,
   type ProspectFilters,
-} from "@/components/ProspectsTable";
-import { useState } from "react";
-import { Card } from "@/components/ui/Card";
+} from "@/features/prospects/filters";
+import type { ProspectRow } from "@/lib/api";
+import { formatInt } from "@/lib/format";
 
-// Options réelles présentes dans les données (dép. 75/92, NAF hôtels/agences).
-const DEPARTEMENTS = [
-  { value: "75", label: "75 — Paris" },
-  { value: "92", label: "92 — Hauts-de-Seine" },
-];
-const NAF_OPTIONS = [
-  { value: "", label: "Tous les NAF" },
-  { value: "5510Z", label: "5510Z — Hôtels" },
-  { value: "7311Z", label: "7311Z — Agences de com" },
-];
+const PAGE_SIZE = 25;
 
-const Propspect = () => {
-  const [contactableOnly, setContactableOnly] = useState(false);
-  const [nafCode, setNafCode] = useState<string>("");
-  const [departments, setDepartments] = useState<string[]>([]);
+/** Liste paginée ; la page revient à 1 quand les filtres changent (clé du parent). */
+const ProspectsList = ({ rows, onReset }: { rows: ProspectRow[]; onReset?: () => void }) => {
+  const [page, setPage] = useState(1);
+  const p = paginate(rows, page, PAGE_SIZE);
 
-  const toggleDepartment = (dep: string, checked: boolean) => {
-    setDepartments((prev) =>
-      checked ? [...prev, dep] : prev.filter((d) => d !== dep),
+  if (rows.length === 0) {
+    return (
+      <EmptyState title="Aucun prospect ne correspond à ces filtres" className="min-h-60">
+        {onReset && (
+          <button type="button" onClick={onReset} className="font-medium text-brand hover:underline">
+            Réinitialiser les filtres
+          </button>
+        )}
+      </EmptyState>
     );
-  };
-  const handleReset = () => {
-    setContactableOnly(false);
-    setNafCode("");
-    setDepartments([]);
-  };
+  }
+  return (
+    <>
+      <ProspectRows rows={p.rows} />
+      <div className="flex items-center justify-between gap-3 border-t pt-3">
+        <span className="text-[13px] text-muted-foreground">
+          {formatInt(p.from)}–{formatInt(p.to)} sur {formatInt(rows.length)}
+        </span>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon-sm" disabled={p.page <= 1} onClick={() => setPage(p.page - 1)}>
+            <ChevronLeft aria-hidden="true" />
+            <span className="sr-only">Page précédente</span>
+          </Button>
+          <span className="min-w-20 text-center text-[13px] tabular-nums" aria-live="polite">
+            Page {p.page} / {p.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            disabled={p.page >= p.totalPages}
+            onClick={() => setPage(p.page + 1)}
+          >
+            <ChevronRight aria-hidden="true" />
+            <span className="sr-only">Page suivante</span>
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+};
 
-  // Filtres appliqués en direct (pas de bouton "Appliquer").
-  const filters: ProspectFilters = {
-    contactableOnly,
-    departements: departments,
-    codeNaf: nafCode || undefined,
-  };
+const Prospects = () => {
+  const filters = Route.useSearch();
+  const navigate = useNavigate({ from: "/prospects/" });
+  const setFilters = (patch: Partial<ProspectFilters>) =>
+    navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+  const reset = () => navigate({ search: {}, replace: true });
+
+  const all = useAllProspects();
+  const items = useMemo(() => all.data?.items ?? [], [all.data]);
+  const options = useMemo(() => facets(items), [items]);
+  const rows = useMemo(() => filterProspects(items, filters), [items, filters]);
 
   return (
-    <div className="w-full lg:h-full flex flex-col lg:flex-row gap-4">
-      <Card className="w-full lg:max-w-md h-fit lg:h-full overflow-hidden border rounded-lg p-4 shrink-0">
-        <FieldGroup>
-          <FieldSet>
-            <div className="flex items-center justify-between mb-4">
-              <FieldLegend>Filtres</FieldLegend>
-              <Button type="button" variant="outline" onClick={handleReset}>
-                Réinitialiser
-              </Button>
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pt-2">
+      <header className="flex flex-col gap-1.5">
+        <h1 className="text-[32px] leading-tight font-semibold tracking-tight">Prospects</h1>
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {all.data
+            ? `${formatInt(rows.length)} sur ${formatInt(items.length)} · triés par score`
+            : "Chargement…"}
+        </p>
+      </header>
+
+      <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+        <FiltersPanel
+          filters={filters}
+          onChange={setFilters}
+          departements={options.departements}
+          naf={options.naf}
+          className="lg:sticky lg:top-0"
+        />
+        <section aria-label="Liste des prospects" className="flex min-w-0 flex-col gap-3 rounded-[20px] border bg-card p-5">
+          {all.isError ? (
+            <ErrorState onRetry={() => all.refetch()} />
+          ) : all.isLoading ? (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 8 }, (_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
-            <FieldDescription>
-              Filtrez la file d'appel selon les différents critères
-            </FieldDescription>
-            <FieldGroup>
-              <Field>
-                <label className="flex gap-2 items-center cursor-pointer text-sm">
-                  <Checkbox
-                    id="contactable-only"
-                    checked={contactableOnly}
-                    onCheckedChange={(c) => setContactableOnly(!!c)}
-                  />
-                  <span>
-                    Uniquement les prospects joignables (tél. ou email)
-                  </span>
-                </label>
-              </Field>
-              <Field>
-                <FieldLabel>Départements</FieldLabel>
-                <div className="flex flex-col gap-2 mt-2">
-                  {DEPARTEMENTS.map((dep) => (
-                    <label
-                      key={dep.value}
-                      className="flex gap-2 items-center cursor-pointer text-sm"
-                    >
-                      <Checkbox
-                        id={`dep-${dep.value}`}
-                        checked={departments.includes(dep.value)}
-                        onCheckedChange={(c) => toggleDepartment(dep.value, !!c)}
-                      />
-                      <span>{dep.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="select-naf">Code NAF</FieldLabel>
-                <Select
-                  value={nafCode}
-                  onValueChange={(v) => setNafCode(v ?? "")}
-                >
-                  <SelectTrigger id="select-naf">
-                    <SelectValue placeholder="Tous les NAF" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {NAF_OPTIONS.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </FieldGroup>
-          </FieldSet>
-        </FieldGroup>
-      </Card>
-      <ProspectsTable filters={filters} />
+          ) : (
+            <ProspectsList
+              key={JSON.stringify(filters)}
+              rows={rows}
+              onReset={hasActiveFilters(filters) ? reset : undefined}
+            />
+          )}
+        </section>
+      </div>
     </div>
   );
 };
 
 export const Route = createFileRoute("/prospects/")({
-  component: Propspect,
+  validateSearch: (search: Record<string, unknown>): ProspectFilters => parseProspectSearch(search),
+  component: Prospects,
 });

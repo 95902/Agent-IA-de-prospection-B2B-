@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { applyPrefill, clearPrefill, readPrefill } from "@/features/campaigns/prefill";
 import { postCampagne } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Field, FieldLabel } from "@/components/ui/Field";
@@ -33,7 +34,10 @@ const EMPTY = {
 };
 
 export const CampaignForm = () => {
-  const [f, setF] = useState({ ...EMPTY });
+  // Pré-rempli depuis le lanceur en langage naturel (« Mode avancé »).
+  const [f, setF] = useState(() => applyPrefill(EMPTY, readPrefill()));
+  useEffect(() => clearPrefill(), []);
+  const queryClient = useQueryClient();
   const set = (k: keyof typeof f, v: string | boolean) =>
     setF((p) => ({ ...p, [k]: v }));
 
@@ -58,7 +62,10 @@ export const CampaignForm = () => {
         mots_cles_positifs: splitList(f.mots_cles_positifs),
         mots_cles_negatifs: splitList(f.mots_cles_negatifs),
       }),
-    onSuccess: () => setF({ ...EMPTY }),
+    onSuccess: () => {
+      setF({ ...EMPTY });
+      queryClient.invalidateQueries({ queryKey: ["campagnes"] });
+    },
   });
 
   const canSubmit =
@@ -164,14 +171,14 @@ export const CampaignForm = () => {
         </div>
 
         {create.isSuccess && (
-          <p className="text-sm text-emerald-600">
+          <p className="text-sm text-success">
             ✓ Campagne créée en <b>brouillon</b> — « {create.data.nom} » (id{" "}
             {create.data.campagne_id.slice(0, 8)}…). Aucun run lancé : lancement à
             déclencher séparément (gate crédits).
           </p>
         )}
         {create.isError && (
-          <p className="text-sm text-rose-600">
+          <p className="text-sm text-destructive">
             Échec : {(create.error as Error).message}
           </p>
         )}

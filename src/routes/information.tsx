@@ -45,7 +45,7 @@ const Information = () => {
           </h1>
           <h2 className="text-muted-foreground">
             Configurez votre profil client pour aider le moteur d'intelligence
-            B2B de ProspectFlow à identifier les prospects à fort potentiel.
+            B2B de B2B Intelligence à identifier les prospects à fort potentiel.
           </h2>
         </div>
         <Breadcrumbs data={STEPS} step={0} />

@@ -11,11 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppelsRouteImport } from './routes/appels'
-import { Route as CampagnesRouteImport } from './routes/campagnes'
 import { Route as InformationRouteImport } from './routes/information'
 import { Route as ParametreRouteImport } from './routes/parametre'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
+import { Route as CampagnesIndexRouteImport } from './routes/campagnes/index'
+import { Route as CampagnesNouvelleRouteImport } from './routes/campagnes/nouvelle'
 import { Route as ProspectsIndexRouteImport } from './routes/prospects/index'
 import { Route as ProspectsProspectIdRouteImport } from './routes/prospects/$prospectId'
 
@@ -27,11 +28,6 @@ const IndexRoute = IndexRouteImport.update({
 const AppelsRoute = AppelsRouteImport.update({
   id: '/appels',
   path: '/appels',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CampagnesRoute = CampagnesRouteImport.update({
-  id: '/campagnes',
-  path: '/campagnes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InformationRoute = InformationRouteImport.update({
@@ -54,6 +50,16 @@ const WorkspaceRoute = WorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampagnesIndexRoute = CampagnesIndexRouteImport.update({
+  id: '/campagnes/',
+  path: '/campagnes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampagnesNouvelleRoute = CampagnesNouvelleRouteImport.update({
+  id: '/campagnes/nouvelle',
+  path: '/campagnes/nouvelle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProspectsIndexRoute = ProspectsIndexRouteImport.update({
   id: '/prospects/',
   path: '/prospects/',
@@ -68,35 +74,38 @@ const ProspectsProspectIdRoute = ProspectsProspectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/appels': typeof AppelsRoute
-  '/campagnes': typeof CampagnesRoute
   '/information': typeof InformationRoute
   '/parametre': typeof ParametreRoute
   '/support': typeof SupportRoute
   '/workspace': typeof WorkspaceRoute
+  '/campagnes/nouvelle': typeof CampagnesNouvelleRoute
   '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/campagnes/': typeof CampagnesIndexRoute
   '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/appels': typeof AppelsRoute
-  '/campagnes': typeof CampagnesRoute
   '/information': typeof InformationRoute
   '/parametre': typeof ParametreRoute
   '/support': typeof SupportRoute
   '/workspace': typeof WorkspaceRoute
+  '/campagnes/nouvelle': typeof CampagnesNouvelleRoute
   '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/campagnes': typeof CampagnesIndexRoute
   '/prospects': typeof ProspectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/appels': typeof AppelsRoute
-  '/campagnes': typeof CampagnesRoute
   '/information': typeof InformationRoute
   '/parametre': typeof ParametreRoute
   '/support': typeof SupportRoute
   '/workspace': typeof WorkspaceRoute
+  '/campagnes/nouvelle': typeof CampagnesNouvelleRoute
   '/prospects/$prospectId': typeof ProspectsProspectIdRoute
+  '/campagnes/': typeof CampagnesIndexRoute
   '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -104,46 +113,50 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/appels'
-    | '/campagnes'
     | '/information'
     | '/parametre'
     | '/support'
     | '/workspace'
+    | '/campagnes/nouvelle'
     | '/prospects/$prospectId'
+    | '/campagnes/'
     | '/prospects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/appels'
-    | '/campagnes'
     | '/information'
     | '/parametre'
     | '/support'
     | '/workspace'
+    | '/campagnes/nouvelle'
     | '/prospects/$prospectId'
+    | '/campagnes'
     | '/prospects'
   id:
     | '__root__'
     | '/'
     | '/appels'
-    | '/campagnes'
     | '/information'
     | '/parametre'
     | '/support'
     | '/workspace'
+    | '/campagnes/nouvelle'
     | '/prospects/$prospectId'
+    | '/campagnes/'
     | '/prospects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppelsRoute: typeof AppelsRoute
-  CampagnesRoute: typeof CampagnesRoute
   InformationRoute: typeof InformationRoute
   ParametreRoute: typeof ParametreRoute
   SupportRoute: typeof SupportRoute
   WorkspaceRoute: typeof WorkspaceRoute
+  CampagnesNouvelleRoute: typeof CampagnesNouvelleRoute
   ProspectsProspectIdRoute: typeof ProspectsProspectIdRoute
+  CampagnesIndexRoute: typeof CampagnesIndexRoute
   ProspectsIndexRoute: typeof ProspectsIndexRoute
 }
 
@@ -161,13 +174,6 @@ declare module '@tanstack/react-router' {
       path: '/appels'
       fullPath: '/appels'
       preLoaderRoute: typeof AppelsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/campagnes': {
-      id: '/campagnes'
-      path: '/campagnes'
-      fullPath: '/campagnes'
-      preLoaderRoute: typeof CampagnesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/information': {
@@ -198,6 +204,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campagnes/': {
+      id: '/campagnes/'
+      path: '/campagnes'
+      fullPath: '/campagnes/'
+      preLoaderRoute: typeof CampagnesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campagnes/nouvelle': {
+      id: '/campagnes/nouvelle'
+      path: '/campagnes/nouvelle'
+      fullPath: '/campagnes/nouvelle'
+      preLoaderRoute: typeof CampagnesNouvelleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prospects/': {
       id: '/prospects/'
       path: '/prospects'
@@ -218,12 +238,13 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppelsRoute: AppelsRoute,
-  CampagnesRoute: CampagnesRoute,
   InformationRoute: InformationRoute,
   ParametreRoute: ParametreRoute,
   SupportRoute: SupportRoute,
   WorkspaceRoute: WorkspaceRoute,
+  CampagnesNouvelleRoute: CampagnesNouvelleRoute,
   ProspectsProspectIdRoute: ProspectsProspectIdRoute,
+  CampagnesIndexRoute: CampagnesIndexRoute,
   ProspectsIndexRoute: ProspectsIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -3,64 +3,88 @@ import {
   LayoutDashboard,
   Settings,
   HelpCircle,
-  Plus,
   Phone,
-  Megaphone,
+  Target,
+  Sparkles,
 } from "lucide-react";
-import { Button } from "./Button";
 import { Link } from "@tanstack/react-router";
+import { BrandMark } from "@/components/BrandMark";
+import { ProfileChip } from "@/components/ProfileChip";
 
 const navItems = [
-  { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
-  { to: "/prospects", label: "Prospects", icon: Users },
-  { to: "/appels", label: "Appels", icon: Phone },
-  { to: "/campagnes", label: "Campagnes", icon: Megaphone },
-];
+  { to: "/", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
+  { to: "/prospects", label: "Prospects", icon: Users, exact: false },
+  { to: "/appels", label: "Appels", icon: Phone, exact: false },
+  { to: "/campagnes", label: "Campagnes", icon: Target, exact: false },
+] as const;
 
 const navItemsSettings = [
   { to: "/parametre", label: "Paramètres", icon: Settings },
   { to: "/support", label: "Support", icon: HelpCircle },
-];
+] as const;
 
-export const Navigation = () => {
+const itemClass =
+  "group flex h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground [&.active]:bg-sidebar-accent [&.active]:font-semibold [&.active]:text-foreground [&.active]:shadow-[inset_0_0_0_1px_var(--border)]";
+const iconClass =
+  "size-[18px] text-muted-foreground transition-colors group-[.active]:text-brand";
+
+/**
+ * Contenu de la sidebar (desktop) et du menu mobile (Sheet).
+ * `onNavigate` ferme le menu mobile après un clic.
+ */
+export const Navigation = ({
+  showBrand = true,
+  onNavigate,
+}: {
+  showBrand?: boolean;
+  onNavigate?: () => void;
+}) => {
   return (
-    <nav className="flex flex-col gap-1 h-full justify-between">
-      <div className="">
+    <div className="flex h-full flex-col gap-6">
+      {showBrand && <BrandMark className="px-2 pt-1" />}
+      <Link
+        to="/campagnes/nouvelle"
+        onClick={onNavigate}
+        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-gradient text-sm font-semibold text-brand-foreground shadow-glow transition hover:brightness-110"
+      >
+        <Sparkles className="size-[18px]" aria-hidden="true" />
+        Nouvelle campagne
+      </Link>
+      <nav aria-label="Navigation principale" className="flex flex-col gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.to}
               to={item.to}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-primary [&.active]:text-primary-foreground transition-colors"
+              activeOptions={{ exact: item.exact }}
+              onClick={onNavigate}
+              className={itemClass}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={iconClass} aria-hidden="true" />
               {item.label}
             </Link>
           );
         })}
-      </div>
-      <div className="flex flex-col gap-4">
-        <Button disabled title="À venir" className="rounded-md py-2">
-          <Plus className="h-4 w-4 " />
-          Importer des prospects
-        </Button>
-        <div>
-          {navItemsSettings.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-primary [&.active]:text-primary-foreground transition-colors"
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </nav>
+      </nav>
+      <div className="flex-1" />
+      <nav aria-label="Réglages et aide" className="flex flex-col gap-1">
+        {navItemsSettings.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              className={itemClass}
+            >
+              <Icon className={iconClass} aria-hidden="true" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <ProfileChip onNavigate={onNavigate} />
+    </div>
   );
 };
