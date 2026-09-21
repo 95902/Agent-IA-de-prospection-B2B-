@@ -7,9 +7,10 @@ etc.) via un adaptateur — l'API expose des champs domaine, pas de la présenta
 from __future__ import annotations
 
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CampagneDTO(BaseModel):
@@ -84,3 +85,35 @@ class CampagneCreatedOut(BaseModel):
     icp_profile_id: UUID
     campagne_id: UUID
     nom: str
+
+
+# --- « Affiner avec l'IA » (lanceur de campagne) ----------------------------
+class IcpParseStatusOut(BaseModel):
+    """Le front n'affiche le bouton que si `enabled` est vrai."""
+    enabled: bool
+    modele: str
+
+
+class IcpParseIn(BaseModel):
+    """La phrase du commercial + les mots que le parseur du front n'a pas traduits."""
+    phrase: str = Field(min_length=1, max_length=1000)
+    non_traduits: list[Annotated[str, Field(min_length=1, max_length=60)]] = Field(
+        min_length=1, max_length=20,
+    )
+
+
+class IcpParseOut(BaseModel):
+    """Critères SUPPLÉMENTAIRES proposés par l'IA (codes vérifiés contre le lexique)."""
+    codes_naf: list[str]
+    departements: list[str]
+    effectif_min: int | None = None
+    effectif_max: int | None = None
+    anciennete_min_ans: int | None = None
+    exiger_site_web: bool
+    exiger_email: bool
+    mots_cles_positifs: list[str]
+    mots_cles_negatifs: list[str]
+    non_traduits: list[str]
+    hypotheses: list[str]
+    modele: str
+    depuis_cache: bool

@@ -11,17 +11,22 @@ Lancer :
 """
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from uuid import UUID
 
+import anthropic
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.models import (
-    CampagneCreatedOut, CampagneDTO, KPIsDTO, NoteIn, OutcomeIn,
-    ProspectDetailDTO, ProspectPage, ProspectRowDTO,
+    CampagneCreatedOut, CampagneDTO, IcpParseIn, IcpParseOut, IcpParseStatusOut,
+    KPIsDTO, NoteIn, OutcomeIn, ProspectDetailDTO, ProspectPage, ProspectRowDTO,
 )
-from utils import db
+from config.settings import get_settings
+from utils import db, icp_parse
+
+logger = logging.getLogger(__name__)
 
 # Coûts unitaires estimés pour le KPI coût (approximation, pas une facturation).
 # NB : dupliqué avec settings du rapport #38 ; à unifier quand #38 sera sur main.
@@ -268,3 +273,32 @@ async def create_campagne(payload: dict = Body(...)):
         client_id=client_id, critere_id=critere_id, icp_profile_id=icp_id,
         campagne_id=campagne_id, nom=p.nom,
     )
+
+
+# --- « Affiner avec l'IA » du lanceur de campagne ------------------------------
+# Payant à chaque appel (Claude) → désactivé par défaut (settings.icp_parse_llm_enabled).
+def _icp_parse_actif() -> bool:
+    s = get_settings()
+    return bool(s.icp_parse_llm_enabled and s.anthropic_api_key)
+
+
+@app.get("/api/icp/parse/status", response_model=IcpParseStatusOut)
+async def icp_parse_status():
+    """Le front n'affiche « Affiner avec l'IA » que si le service est actif ici."""
+    return IcpParseStatusOut(enabled=_icp_parse_actif(), modele=get_settings().claude_icp_parse_model)
+
+
+@app.post("/api/icp/parse", response_model=IcpParseOut)
+async def icp_parse_affiner(body: IcpParseIn):
+    """Traduit en critères ICP les mots que le parseur déterministe du front n'a pas su
+    mapper. Aucune écriture en base ; un appel Claude par demande nouvelle (cache sinon)."""
+    if not _icp_parse_actif():
+        raise HTTPException(status_code=503, detail="Affinage IA désactivé sur ce serveur.")
+    try:
+        resultat, depuis_cache = await icp_parse.affiner(body.phrase, body.non_traduits)
+    except icp_parse.IcpParseError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except anthropic.APIError as exc:                    # rate-limit / status / connexion
+        logger.warning("Affinage IA indisponible : %s", exc)
+        raise HTTPException(status_code=503, detail="IA indisponible, réessayez plus tard.") from exc
+    return IcpParseOut(**resultat, modele=get_settings().claude_icp_parse_model, depuis_cache=depuis_cache)

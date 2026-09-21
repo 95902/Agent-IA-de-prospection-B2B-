@@ -1,0 +1,8 @@
+{# Message utilisateur de « Affiner avec l'IA » : la phrase + les mots non traduits. #}
+Phrase du commercial :
+« {{ phrase }} »
+
+Mots non traduits par le parseur :
+{% for m in non_traduits -%}
+- {{ m }}
+{% endfor %}
