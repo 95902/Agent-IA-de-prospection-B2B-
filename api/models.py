@@ -18,6 +18,8 @@ class CampagneDTO(BaseModel):
     statut: str
     prospects_collectes: int
     prospects_qualifies: int
+    # Qualifiés (score >= 60) ET joignables (email ou téléphone).
+    actionnables: int = 0
 
 
 class ProspectRowDTO(BaseModel):
@@ -66,6 +68,12 @@ class KPIsDTO(BaseModel):
     pct_qualifies: float
     score_moy_qualifies: float | None = None
     cout_estime_eur: float
+    # `qualifies` compte le statut (décrémenté par les résultats d'appel) ;
+    # `qualifies_score` compte score_final >= 60, indépendamment des appels.
+    qualifies_score: int = 0
+    joignables: int = 0
+    actionnables: int = 0
+    pct_actionnables: float = 0.0
 
 
 # --- Corps de requête (écriture, #116 A) ----------------------------------
