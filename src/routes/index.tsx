@@ -1,101 +1,145 @@
 /* eslint-disable react-refresh/only-export-components */
-import { DesktopTable } from "@/components/DesktopTable";
-import { KPICard, type KpiCardProps } from "@/components/KPICard";
-import { useQuery } from "@tanstack/react-query";
-import { getKpis, getProspects } from "@/lib/api";
-
 import { createFileRoute } from "@tanstack/react-router";
-import { HandCoins, Rocket, Users, Zap } from "lucide-react";
-import { CampagneHealth } from "@/components/CampagneHealth";
-import { HeaderPropspect } from "@/components/HeaderPropspect";
-import { ChartProspect } from "@/components/ChartProspect";
-
-export interface PropspectTableProps {
-  id: string;
-  companyName: string;
-  contactName: string;
-  contactRole: string;
-  status: "Qualified" | "Discovery";
-  score: number;
-}
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { ActionableHero } from "@/features/dashboard/components/ActionableHero";
+import { CampaignsCard } from "@/features/dashboard/components/CampaignsCard";
+import { ScoreDistribution } from "@/features/dashboard/components/ScoreDistribution";
+import { StatCard } from "@/features/dashboard/components/StatCard";
+import { TopProspects } from "@/features/dashboard/components/TopProspects";
+import {
+  useAllProspects,
+  useCampaignStats,
+  useKpis,
+} from "@/features/dashboard/queries";
+import { resolveActionable, resolveQualified } from "@/features/dashboard/stats";
+import { formatInt, formatPct, formatScore, ratio } from "@/lib/format";
+import { KPI_WINDOWS, kpiWindowDescription } from "@/lib/kpiWindow";
+import { updateProfile, useProfile } from "@/lib/profile";
 
 const Dashboard = () => {
-  // KPIs réels (fenêtre 30 jours). Pas de `change` : aucune série temporelle.
-  const { data: kpis } = useQuery({
-    queryKey: ["kpis", { sinceDays: 30 }],
-    queryFn: () => getKpis({ sinceDays: 30 }),
-  });
+  const { kpiWindow } = useProfile();
+  const kpis = useKpis(kpiWindow);
+  const all = useAllProspects();
+  const campaigns = useCampaignStats();
 
-  // Aperçu des meilleurs prospects (triés par score) pour la table du dashboard.
-  const { data: page } = useQuery({
-    queryKey: ["prospects", { limit: 10 }],
-    queryFn: () => getProspects({ limit: 10 }),
-  });
-  const recentProspects: PropspectTableProps[] = (page?.items ?? []).map(
-    (p) => ({
-      id: p.id,
-      companyName: p.nom_entreprise,
-      contactName: p.telephone ?? p.email ?? "—",
-      contactRole: p.code_naf ?? "—",
-      status: p.statut === "qualifie" ? "Qualified" : "Discovery",
-      score: p.score_final,
-    }),
-  );
+  const allStats = all.data?.stats;
+  const actionable = resolveActionable(kpiWindow, kpis.data, allStats);
+  const qualified = resolveQualified(kpiWindow, kpis.data, allStats);
+  const k = kpis.data;
+  // Joignables = email OU tél. : champ API (PR-B1), sinon agrégat exact pour « Tout ».
+  const reachablePct =
+    k && typeof k.joignables === "number"
+      ? ratio(k.joignables, k.collectes)
+      : kpiWindow === "all" && allStats
+        ? ratio(allStats.reachable, allStats.total)
+        : null;
 
-  const kpiCards: KpiCardProps[] = [
-    {
-      title: "Prospects collectés",
-      value: kpis?.collectes ?? "…",
-      icon: Users,
-      iconTextColor: "text-emerald-500",
-      iconBackgroundColor: "bg-emerald-500/20",
-    },
-    {
-      title: "Prospects qualifiés",
-      value: kpis?.qualifies ?? "…",
-      icon: Rocket,
-      iconTextColor: "text-blue-500",
-      iconBackgroundColor: "bg-blue-500/20",
-    },
-    {
-      title: "Note moyenne (qualifiés)",
-      value:
-        kpis?.score_moy_qualifies != null
-          ? `${kpis.score_moy_qualifies}/100`
-          : "—",
-      icon: Zap,
-      iconTextColor: "text-amber-500",
-      iconBackgroundColor: "bg-amber-500/20",
-    },
-    {
-      title: "% qualifiés (≥60)",
-      value: kpis != null ? `${kpis.pct_qualifies}%` : "…",
-      icon: HandCoins,
-      iconTextColor: "text-purple-500",
-      iconBackgroundColor: "bg-purple-500/20",
-    },
-  ];
+  const subtitle = [
+    kpiWindowDescription(kpiWindow),
+    campaigns.data && `${campaigns.data.length} campagnes`,
+    k && `${formatInt(k.collectes)} entreprises analysées`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="flex flex-col gap-6">
-      <HeaderPropspect />
-      <div className="flex overflow-x-scroll gap-4 p-1">
-        {kpiCards.map((kpi, index) => (
-          <KPICard
-            key={index}
-            title={kpi.title}
-            value={kpi.value}
-            icon={kpi.icon}
-            iconTextColor={kpi.iconTextColor}
-            iconBackgroundColor={kpi.iconBackgroundColor}
-          />
-        ))}
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
+      <header className="flex flex-col gap-4 pt-2 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[32px] leading-tight font-semibold tracking-tight">
+            Tableau de bord
+          </h1>
+          <p className="text-sm text-muted-foreground">{subtitle || "Chargement…"}</p>
+        </div>
+        <SegmentedControl
+          label="Période des indicateurs"
+          options={KPI_WINDOWS}
+          value={kpiWindow}
+          onChange={(w) => updateProfile({ kpiWindow: w })}
+          className="self-start md:self-auto"
+        />
+      </header>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <ActionableHero
+          summary={actionable}
+          isLoading={kpis.isLoading && all.isLoading}
+          isError={kpis.isError && all.isError}
+          onRetry={() => {
+            kpis.refetch();
+            all.refetch();
+          }}
+          className="md:col-span-2 xl:row-span-2"
+        />
+        <StatCard
+          label="Collectés"
+          isLoading={kpis.isLoading}
+          value={k ? formatInt(k.collectes) : "—"}
+          sub="entreprises Sirene analysées"
+        />
+        <StatCard
+          label={qualified?.basis === "statut" ? "Qualifiés" : "Qualifiés ≥ 60"}
+          isLoading={kpis.isLoading && !qualified}
+          value={qualified ? formatInt(qualified.value) : "—"}
+          sub={
+            qualified && k
+              ? qualified.basis === "score"
+                ? `${formatPct(ratio(qualified.value, k.collectes))} des collectés`
+                : "statut « qualifié » (hors appels traités)"
+              : undefined
+          }
+        />
+        <StatCard
+          label="Joignabilité"
+          isLoading={kpis.isLoading}
+          value={reachablePct === null ? "—" : formatPct(reachablePct)}
+          sub={
+            k
+              ? `email ${formatPct(k.taux_email)} · tél. ${formatPct(k.taux_tel)}`
+              : undefined
+          }
+        />
+        <StatCard
+          label="Score moyen"
+          isLoading={kpis.isLoading}
+          value={
+            k?.score_moy_qualifies != null ? (
+              <>
+                {formatScore(k.score_moy_qualifies)}
+                <span className="text-lg font-medium text-muted-foreground"> /100</span>
+              </>
+            ) : (
+              "—"
+            )
+          }
+          sub="des prospects qualifiés"
+        />
       </div>
-      <div className="flex flex-col w-full lg:flex-row gap-4">
-        <ChartProspect />
-        <CampagneHealth />
+
+      <div className="grid gap-4 xl:grid-cols-12">
+        <ScoreDistribution
+          className="xl:col-span-5"
+          buckets={allStats?.buckets}
+          total={allStats?.total ?? 0}
+          isLoading={all.isLoading}
+          isError={all.isError}
+          onRetry={() => all.refetch()}
+        />
+        <CampaignsCard
+          className="xl:col-span-7"
+          campaigns={campaigns.data}
+          isLoading={campaigns.isLoading}
+          isError={campaigns.isError}
+          onRetry={() => campaigns.refetch()}
+        />
       </div>
-      <DesktopTable data={recentProspects} />
+
+      <TopProspects
+        items={all.data?.items}
+        isLoading={all.isLoading}
+        isError={all.isError}
+        onRetry={() => all.refetch()}
+      />
     </div>
   );
 };

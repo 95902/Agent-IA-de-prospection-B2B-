@@ -25,7 +25,11 @@ import {
 import { MoveLeft, MoveRight } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { useState } from "react";
-import type { ColumnConfig } from "@/components/DesktopTable";
+export interface ColumnConfig {
+  key: string;
+  label: string;
+  className?: string;
+}
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getProspects } from "@/lib/api";

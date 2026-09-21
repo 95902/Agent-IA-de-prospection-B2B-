@@ -15,6 +15,8 @@ export interface Campagne {
   statut: string;
   prospects_collectes: number;
   prospects_qualifies: number;
+  /** PR-B1 : qualifiés (score ≥ 60) ET joignables. Absent tant que l'API n'est pas à jour. */
+  actionnables?: number;
 }
 
 export interface ProspectRow {
@@ -60,6 +62,14 @@ export interface Kpis {
   pct_qualifies: number;
   score_moy_qualifies: number | null;
   cout_estime_eur: number;
+  // --- PR-B1 (lecture seule) : absents tant que l'API n'est pas à jour ---
+  /** Prospects avec score_final >= 60 (indépendant du statut d'appel). */
+  qualifies_score?: number;
+  /** Prospects avec email ou téléphone. */
+  joignables?: number;
+  /** Qualifiés (score >= 60) ET joignables. */
+  actionnables?: number;
+  pct_actionnables?: number;
 }
 
 // --- Fetch helper ----------------------------------------------------------
