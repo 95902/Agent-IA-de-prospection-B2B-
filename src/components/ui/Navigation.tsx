@@ -43,7 +43,7 @@ export const Navigation = ({
     <div className="flex h-full flex-col gap-6">
       {showBrand && <BrandMark className="px-2 pt-1" />}
       <Link
-        to="/campagnes"
+        to="/campagnes/nouvelle"
         onClick={onNavigate}
         className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-gradient text-sm font-semibold text-brand-foreground shadow-glow transition hover:brightness-110"
       >

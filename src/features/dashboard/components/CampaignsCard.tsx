@@ -16,7 +16,9 @@ export const CampaignsCard = ({
   isError,
   onRetry,
   className,
+  showViewAll = true,
 }: {
+  showViewAll?: boolean;
   campaigns: CampaignStats[] | undefined;
   isLoading: boolean;
   isError: boolean;
@@ -39,7 +41,7 @@ export const CampaignsCard = ({
   else if (campaigns.length === 0)
     body = (
       <EmptyState title="Aucune campagne">
-        <Link to="/campagnes" className="font-medium text-brand hover:underline">
+        <Link to="/campagnes/nouvelle" className="font-medium text-brand hover:underline">
           Créer une première campagne
         </Link>
       </EmptyState>
@@ -94,12 +96,14 @@ export const CampaignsCard = ({
         title="Campagnes"
         description="Rendement = actionnables / collectés."
         action={
+          showViewAll && (
           <Link
             to="/campagnes"
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand hover:underline"
           >
             Voir tout <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
+          )
         }
       />
       {body}

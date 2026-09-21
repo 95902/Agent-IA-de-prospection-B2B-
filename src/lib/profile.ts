@@ -15,6 +15,9 @@ export type Profile = {
   density: Density;
   /** Intensité de l'aurore, 0–100. */
   aurora: number;
+  /** Derniers client / produit saisis dans le lanceur de campagne (pré-remplissage). */
+  dernierClient: string;
+  dernierProduit: string;
 };
 
 export const PROFILE_STORAGE_KEY = "b2b-profile";
@@ -25,6 +28,8 @@ export const DEFAULT_PROFILE: Profile = {
   kpiWindow: "all",
   density: "comfortable",
   aurora: 60,
+  dernierClient: "",
+  dernierProduit: "",
 };
 
 const MAX_TEXT = 80;
@@ -49,6 +54,8 @@ export function parseProfile(raw: unknown): Profile {
     kpiWindow: isKpiWindow(r.kpiWindow) ? r.kpiWindow : DEFAULT_PROFILE.kpiWindow,
     density: r.density === "compact" ? "compact" : "comfortable",
     aurora: r.aurora === undefined ? DEFAULT_PROFILE.aurora : clampAurora(r.aurora),
+    dernierClient: cleanText(r.dernierClient),
+    dernierProduit: cleanText(r.dernierProduit),
   };
 }
 

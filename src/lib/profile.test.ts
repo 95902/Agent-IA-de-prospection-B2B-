@@ -37,6 +37,8 @@ describe("parseProfile", () => {
       kpiWindow: DEFAULT_PROFILE.kpiWindow,
       density: "compact",
       aurora: 100,
+      dernierClient: "",
+      dernierProduit: "",
     });
   });
 
