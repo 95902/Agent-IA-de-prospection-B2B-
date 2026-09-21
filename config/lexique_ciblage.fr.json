@@ -1,0 +1,1918 @@
+{
+  "version": 1,
+  "sources": {
+    "naf": "INSEE — NAF rév. 2, libellés vérifiés sur insee.fr/fr/metadonnees/nafr2 le 2026-09-21",
+    "geo": "geo.api.gouv.fr (départements, régions, communes) le 2026-09-21"
+  },
+  "secteurs": [
+    {
+      "id": "hotels",
+      "label": "Hôtels",
+      "naf": [
+        {
+          "code": "5510Z",
+          "libelle": "Hôtels et hébergement similaire"
+        }
+      ],
+      "synonymes": [
+        "hotel",
+        "hotels",
+        "hotellerie",
+        "hotelier",
+        "hoteliers"
+      ]
+    },
+    {
+      "id": "hebergement-touristique",
+      "label": "Hébergement touristique",
+      "naf": [
+        {
+          "code": "5520Z",
+          "libelle": "Hébergement touristique et autre hébergement de courte durée"
+        }
+      ],
+      "synonymes": [
+        "gite",
+        "gites",
+        "chambre d'hote",
+        "chambres d'hotes",
+        "chambres d'hote",
+        "location saisonniere",
+        "locations saisonnieres",
+        "residence de tourisme",
+        "residences de tourisme",
+        "auberge de jeunesse",
+        "auberges de jeunesse"
+      ]
+    },
+    {
+      "id": "campings",
+      "label": "Campings",
+      "naf": [
+        {
+          "code": "5530Z",
+          "libelle": "Terrains de camping et parcs pour caravanes ou véhicules de loisirs"
+        }
+      ],
+      "synonymes": [
+        "camping",
+        "campings"
+      ]
+    },
+    {
+      "id": "restaurants",
+      "label": "Restaurants",
+      "naf": [
+        {
+          "code": "5610A",
+          "libelle": "Restauration traditionnelle"
+        }
+      ],
+      "synonymes": [
+        "restaurant",
+        "restaurants",
+        "restauration traditionnelle",
+        "restaurateur",
+        "restaurateurs",
+        "brasserie",
+        "brasseries",
+        "bistrot",
+        "bistrots"
+      ]
+    },
+    {
+      "id": "restauration-rapide",
+      "label": "Restauration rapide",
+      "naf": [
+        {
+          "code": "5610C",
+          "libelle": "Restauration de type rapide"
+        }
+      ],
+      "synonymes": [
+        "restauration rapide",
+        "fast food",
+        "fast foods",
+        "snack",
+        "snacks",
+        "kebab",
+        "kebabs"
+      ]
+    },
+    {
+      "id": "traiteurs",
+      "label": "Traiteurs",
+      "naf": [
+        {
+          "code": "5621Z",
+          "libelle": "Services des traiteurs"
+        }
+      ],
+      "synonymes": [
+        "traiteur",
+        "traiteurs"
+      ]
+    },
+    {
+      "id": "bars",
+      "label": "Bars et cafés",
+      "naf": [
+        {
+          "code": "5630Z",
+          "libelle": "Débits de boissons"
+        }
+      ],
+      "synonymes": [
+        "bar",
+        "bars",
+        "cafe",
+        "cafes",
+        "debit de boissons",
+        "debits de boissons",
+        "pub",
+        "pubs"
+      ]
+    },
+    {
+      "id": "boulangeries",
+      "label": "Boulangeries",
+      "naf": [
+        {
+          "code": "1071C",
+          "libelle": "Boulangerie et boulangerie-pâtisserie"
+        }
+      ],
+      "synonymes": [
+        "boulangerie",
+        "boulangeries",
+        "boulanger",
+        "boulangers"
+      ]
+    },
+    {
+      "id": "patisseries",
+      "label": "Pâtisseries",
+      "naf": [
+        {
+          "code": "1071D",
+          "libelle": "Pâtisserie"
+        }
+      ],
+      "synonymes": [
+        "patisserie",
+        "patisseries",
+        "patissier",
+        "patissiers"
+      ]
+    },
+    {
+      "id": "boucheries",
+      "label": "Boucheries",
+      "naf": [
+        {
+          "code": "4722Z",
+          "libelle": "Commerce de détail de viandes et de produits à base de viande en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "boucherie",
+        "boucheries",
+        "boucher",
+        "bouchers",
+        "charcuterie",
+        "charcuteries"
+      ]
+    },
+    {
+      "id": "pharmacies",
+      "label": "Pharmacies",
+      "naf": [
+        {
+          "code": "4773Z",
+          "libelle": "Commerce de détail de produits pharmaceutiques en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "pharmacie",
+        "pharmacies",
+        "pharmacien",
+        "pharmaciens",
+        "officine",
+        "officines"
+      ]
+    },
+    {
+      "id": "fleuristes",
+      "label": "Fleuristes et jardineries",
+      "naf": [
+        {
+          "code": "4776Z",
+          "libelle": "Commerce de détail de fleurs, plantes, graines, engrais, animaux de compagnie et aliments pour ces animaux en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "fleuriste",
+        "fleuristes",
+        "jardinerie",
+        "jardineries",
+        "animalerie",
+        "animaleries"
+      ]
+    },
+    {
+      "id": "opticiens",
+      "label": "Opticiens",
+      "naf": [
+        {
+          "code": "4778A",
+          "libelle": "Commerces de détail d'optique"
+        }
+      ],
+      "synonymes": [
+        "opticien",
+        "opticiens",
+        "optique",
+        "magasin d'optique",
+        "magasins d'optique"
+      ]
+    },
+    {
+      "id": "librairies",
+      "label": "Librairies",
+      "naf": [
+        {
+          "code": "4761Z",
+          "libelle": "Commerce de détail de livres en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "librairie",
+        "librairies",
+        "libraire",
+        "libraires"
+      ]
+    },
+    {
+      "id": "boutiques-vetements",
+      "label": "Boutiques de vêtements",
+      "naf": [
+        {
+          "code": "4771Z",
+          "libelle": "Commerce de détail d'habillement en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "boutique de vetements",
+        "boutiques de vetements",
+        "magasin de vetements",
+        "magasins de vetements",
+        "pret a porter"
+      ]
+    },
+    {
+      "id": "epiceries",
+      "label": "Épiceries et supérettes",
+      "naf": [
+        {
+          "code": "4711B",
+          "libelle": "Commerce d'alimentation générale"
+        },
+        {
+          "code": "4711C",
+          "libelle": "Supérettes"
+        }
+      ],
+      "synonymes": [
+        "epicerie",
+        "epiceries",
+        "superette",
+        "superettes",
+        "alimentation generale"
+      ]
+    },
+    {
+      "id": "cavistes",
+      "label": "Cavistes",
+      "naf": [
+        {
+          "code": "4725Z",
+          "libelle": "Commerce de détail de boissons en magasin spécialisé"
+        }
+      ],
+      "synonymes": [
+        "caviste",
+        "cavistes",
+        "cave a vin",
+        "caves a vin"
+      ]
+    },
+    {
+      "id": "garages",
+      "label": "Garages automobiles",
+      "naf": [
+        {
+          "code": "4520A",
+          "libelle": "Entretien et réparation de véhicules automobiles légers"
+        }
+      ],
+      "synonymes": [
+        "garage",
+        "garages",
+        "garagiste",
+        "garagistes",
+        "reparation automobile",
+        "mecanique automobile"
+      ]
+    },
+    {
+      "id": "concessionnaires",
+      "label": "Concessionnaires automobiles",
+      "naf": [
+        {
+          "code": "4511Z",
+          "libelle": "Commerce de voitures et de véhicules automobiles légers"
+        }
+      ],
+      "synonymes": [
+        "concessionnaire",
+        "concessionnaires",
+        "concession automobile",
+        "concessions automobiles"
+      ]
+    },
+    {
+      "id": "coiffeurs",
+      "label": "Salons de coiffure",
+      "naf": [
+        {
+          "code": "9602A",
+          "libelle": "Coiffure"
+        }
+      ],
+      "synonymes": [
+        "coiffeur",
+        "coiffeurs",
+        "coiffeuse",
+        "coiffeuses",
+        "coiffure",
+        "salon de coiffure",
+        "salons de coiffure",
+        "barbier",
+        "barbiers"
+      ]
+    },
+    {
+      "id": "instituts-beaute",
+      "label": "Instituts de beauté",
+      "naf": [
+        {
+          "code": "9602B",
+          "libelle": "Soins de beauté"
+        }
+      ],
+      "synonymes": [
+        "institut de beaute",
+        "instituts de beaute",
+        "esthetique",
+        "estheticienne",
+        "estheticiennes",
+        "soins de beaute",
+        "onglerie",
+        "ongleries"
+      ]
+    },
+    {
+      "id": "pressings",
+      "label": "Pressings",
+      "naf": [
+        {
+          "code": "9601B",
+          "libelle": "teinturerie de détail"
+        }
+      ],
+      "synonymes": [
+        "pressing",
+        "pressings",
+        "blanchisserie",
+        "blanchisseries",
+        "teinturerie",
+        "teintureries"
+      ]
+    },
+    {
+      "id": "agences-immobilieres",
+      "label": "Agences immobilières",
+      "naf": [
+        {
+          "code": "6831Z",
+          "libelle": "Agences immobilières"
+        }
+      ],
+      "synonymes": [
+        "agence immobiliere",
+        "agences immobilieres",
+        "agent immobilier",
+        "agents immobiliers",
+        "immobilier"
+      ]
+    },
+    {
+      "id": "agences-communication",
+      "label": "Agences de communication",
+      "naf": [
+        {
+          "code": "7311Z",
+          "libelle": "Activités des agences de publicité"
+        }
+      ],
+      "synonymes": [
+        "agence de communication",
+        "agences de communication",
+        "agence de publicite",
+        "agences de publicite",
+        "agence de pub",
+        "agences de pub",
+        "publicite",
+        "agence marketing",
+        "agences marketing"
+      ]
+    },
+    {
+      "id": "conseil",
+      "label": "Cabinets de conseil",
+      "naf": [
+        {
+          "code": "7022Z",
+          "libelle": "Conseil pour les affaires et autres conseils de gestion"
+        }
+      ],
+      "synonymes": [
+        "cabinet de conseil",
+        "cabinets de conseil",
+        "conseil en gestion",
+        "consultant",
+        "consultants"
+      ]
+    },
+    {
+      "id": "experts-comptables",
+      "label": "Experts-comptables",
+      "naf": [
+        {
+          "code": "6920Z",
+          "libelle": "Activités comptables"
+        }
+      ],
+      "synonymes": [
+        "expert comptable",
+        "experts comptables",
+        "cabinet comptable",
+        "cabinets comptables",
+        "comptable",
+        "comptables",
+        "comptabilite"
+      ]
+    },
+    {
+      "id": "juridique",
+      "label": "Avocats et notaires",
+      "naf": [
+        {
+          "code": "6910Z",
+          "libelle": "Activités juridiques"
+        }
+      ],
+      "synonymes": [
+        "avocat",
+        "avocats",
+        "cabinet d'avocats",
+        "cabinets d'avocats",
+        "notaire",
+        "notaires",
+        "etude notariale",
+        "etudes notariales",
+        "huissier",
+        "huissiers"
+      ]
+    },
+    {
+      "id": "architectes",
+      "label": "Architectes",
+      "naf": [
+        {
+          "code": "7111Z",
+          "libelle": "Activités d'architecture"
+        }
+      ],
+      "synonymes": [
+        "architecte",
+        "architectes",
+        "cabinet d'architecture",
+        "cabinets d'architecture"
+      ]
+    },
+    {
+      "id": "bureaux-etudes",
+      "label": "Bureaux d'études",
+      "naf": [
+        {
+          "code": "7112B",
+          "libelle": "Ingénierie, études techniques"
+        }
+      ],
+      "synonymes": [
+        "bureau d'etudes",
+        "bureaux d'etudes",
+        "ingenierie",
+        "etudes techniques"
+      ]
+    },
+    {
+      "id": "informatique",
+      "label": "Informatique et logiciels",
+      "naf": [
+        {
+          "code": "6201Z",
+          "libelle": "Programmation informatique"
+        },
+        {
+          "code": "6202A",
+          "libelle": "Conseil en systèmes et logiciels informatiques"
+        }
+      ],
+      "synonymes": [
+        "esn",
+        "ssii",
+        "editeur de logiciels",
+        "editeurs de logiciels",
+        "developpement logiciel",
+        "agence web",
+        "agences web",
+        "informatique"
+      ]
+    },
+    {
+      "id": "dentistes",
+      "label": "Dentistes",
+      "naf": [
+        {
+          "code": "8623Z",
+          "libelle": "Pratique dentaire"
+        }
+      ],
+      "synonymes": [
+        "dentiste",
+        "dentistes",
+        "cabinet dentaire",
+        "cabinets dentaires",
+        "chirurgien dentiste",
+        "chirurgiens dentistes"
+      ]
+    },
+    {
+      "id": "medecins",
+      "label": "Médecins généralistes",
+      "naf": [
+        {
+          "code": "8621Z",
+          "libelle": "Activité des médecins généralistes"
+        }
+      ],
+      "synonymes": [
+        "medecin",
+        "medecins",
+        "medecin generaliste",
+        "medecins generalistes",
+        "cabinet medical",
+        "cabinets medicaux"
+      ]
+    },
+    {
+      "id": "kines",
+      "label": "Kinés et podologues",
+      "naf": [
+        {
+          "code": "8690E",
+          "libelle": "Activités des professionnels de la rééducation, de l'appareillage et des pédicures-podologues"
+        }
+      ],
+      "synonymes": [
+        "kine",
+        "kines",
+        "kinesitherapeute",
+        "kinesitherapeutes",
+        "kinesitherapie",
+        "podologue",
+        "podologues"
+      ]
+    },
+    {
+      "id": "veterinaires",
+      "label": "Vétérinaires",
+      "naf": [
+        {
+          "code": "7500Z",
+          "libelle": "Activités vétérinaires"
+        }
+      ],
+      "synonymes": [
+        "veterinaire",
+        "veterinaires",
+        "clinique veterinaire",
+        "cliniques veterinaires"
+      ]
+    },
+    {
+      "id": "salles-sport",
+      "label": "Salles de sport",
+      "naf": [
+        {
+          "code": "9313Z",
+          "libelle": "Activités des centres de culture physique"
+        }
+      ],
+      "synonymes": [
+        "salle de sport",
+        "salles de sport",
+        "salle de fitness",
+        "salles de fitness",
+        "fitness",
+        "centre de remise en forme",
+        "centres de remise en forme"
+      ]
+    },
+    {
+      "id": "auto-ecoles",
+      "label": "Auto-écoles",
+      "naf": [
+        {
+          "code": "8553Z",
+          "libelle": "Enseignement de la conduite"
+        }
+      ],
+      "synonymes": [
+        "auto ecole",
+        "auto ecoles",
+        "ecole de conduite",
+        "ecoles de conduite"
+      ]
+    },
+    {
+      "id": "formation",
+      "label": "Organismes de formation",
+      "naf": [
+        {
+          "code": "8559A",
+          "libelle": "Formation continue d'adultes"
+        }
+      ],
+      "synonymes": [
+        "organisme de formation",
+        "organismes de formation",
+        "formation professionnelle",
+        "formation continue",
+        "centre de formation",
+        "centres de formation"
+      ]
+    },
+    {
+      "id": "creches",
+      "label": "Crèches",
+      "naf": [
+        {
+          "code": "8891A",
+          "libelle": "Accueil de jeunes enfants"
+        }
+      ],
+      "synonymes": [
+        "creche",
+        "creches",
+        "micro creche",
+        "micro creches"
+      ]
+    },
+    {
+      "id": "ehpad",
+      "label": "EHPAD",
+      "naf": [
+        {
+          "code": "8710A",
+          "libelle": "Hébergement médicalisé pour personnes âgées"
+        }
+      ],
+      "synonymes": [
+        "ehpad",
+        "maison de retraite",
+        "maisons de retraite"
+      ]
+    },
+    {
+      "id": "nettoyage",
+      "label": "Entreprises de nettoyage",
+      "naf": [
+        {
+          "code": "8121Z",
+          "libelle": "Nettoyage courant des bâtiments"
+        }
+      ],
+      "synonymes": [
+        "nettoyage",
+        "entreprise de nettoyage",
+        "entreprises de nettoyage",
+        "proprete"
+      ]
+    },
+    {
+      "id": "paysagistes",
+      "label": "Paysagistes",
+      "naf": [
+        {
+          "code": "8130Z",
+          "libelle": "Services d'aménagement paysager"
+        }
+      ],
+      "synonymes": [
+        "paysagiste",
+        "paysagistes",
+        "espaces verts",
+        "amenagement paysager"
+      ]
+    },
+    {
+      "id": "plombiers",
+      "label": "Plombiers et chauffagistes",
+      "naf": [
+        {
+          "code": "4322A",
+          "libelle": "Travaux d'installation d'eau et de gaz en tous locaux"
+        },
+        {
+          "code": "4322B",
+          "libelle": "Travaux d'installation d'équipements thermiques et de climatisation"
+        }
+      ],
+      "synonymes": [
+        "plombier",
+        "plombiers",
+        "plomberie",
+        "chauffagiste",
+        "chauffagistes",
+        "climatisation"
+      ]
+    },
+    {
+      "id": "electriciens",
+      "label": "Électriciens",
+      "naf": [
+        {
+          "code": "4321A",
+          "libelle": "Travaux d'installation électrique dans tous locaux"
+        }
+      ],
+      "synonymes": [
+        "electricien",
+        "electriciens",
+        "installation electrique"
+      ]
+    },
+    {
+      "id": "macons",
+      "label": "Maçons",
+      "naf": [
+        {
+          "code": "4399C",
+          "libelle": "Travaux de maçonnerie générale et gros œuvre de bâtiment"
+        }
+      ],
+      "synonymes": [
+        "macon",
+        "macons",
+        "maconnerie",
+        "gros oeuvre"
+      ]
+    },
+    {
+      "id": "menuisiers",
+      "label": "Menuisiers",
+      "naf": [
+        {
+          "code": "4332A",
+          "libelle": "Travaux de menuiserie bois et PVC"
+        }
+      ],
+      "synonymes": [
+        "menuisier",
+        "menuisiers",
+        "menuiserie",
+        "menuiseries"
+      ]
+    },
+    {
+      "id": "serruriers",
+      "label": "Serruriers et métalliers",
+      "naf": [
+        {
+          "code": "4332B",
+          "libelle": "Travaux de menuiserie métallique et serrurerie"
+        }
+      ],
+      "synonymes": [
+        "serrurier",
+        "serruriers",
+        "serrurerie",
+        "metallerie"
+      ]
+    },
+    {
+      "id": "peintres-batiment",
+      "label": "Peintres en bâtiment",
+      "naf": [
+        {
+          "code": "4334Z",
+          "libelle": "Travaux de peinture et vitrerie"
+        }
+      ],
+      "synonymes": [
+        "peintre en batiment",
+        "peintres en batiment",
+        "peinture en batiment",
+        "vitrerie"
+      ]
+    },
+    {
+      "id": "constructeurs-maisons",
+      "label": "Constructeurs de maisons",
+      "naf": [
+        {
+          "code": "4120A",
+          "libelle": "Construction de maisons individuelles"
+        }
+      ],
+      "synonymes": [
+        "constructeur de maisons",
+        "constructeurs de maisons",
+        "construction de maisons",
+        "maisons individuelles"
+      ]
+    },
+    {
+      "id": "taxis",
+      "label": "Taxis",
+      "naf": [
+        {
+          "code": "4932Z",
+          "libelle": "Transports de voyageurs par taxis"
+        }
+      ],
+      "synonymes": [
+        "taxi",
+        "taxis"
+      ]
+    },
+    {
+      "id": "demenagement",
+      "label": "Déménageurs",
+      "naf": [
+        {
+          "code": "4942Z",
+          "libelle": "Services de déménagement"
+        }
+      ],
+      "synonymes": [
+        "demenagement",
+        "demenageur",
+        "demenageurs"
+      ]
+    },
+    {
+      "id": "agences-voyage",
+      "label": "Agences de voyage",
+      "naf": [
+        {
+          "code": "7911Z",
+          "libelle": "Activités des agences de voyage"
+        }
+      ],
+      "synonymes": [
+        "agence de voyage",
+        "agences de voyage",
+        "agence de voyages",
+        "agences de voyages"
+      ]
+    },
+    {
+      "id": "courtiers-assurance",
+      "label": "Courtiers et agents d'assurance",
+      "naf": [
+        {
+          "code": "6622Z",
+          "libelle": "Activités des agents et courtiers d'assurances"
+        }
+      ],
+      "synonymes": [
+        "courtier en assurance",
+        "courtiers en assurance",
+        "agent d'assurance",
+        "agents d'assurance",
+        "agence d'assurance",
+        "agences d'assurance"
+      ]
+    },
+    {
+      "id": "photographes",
+      "label": "Photographes",
+      "naf": [
+        {
+          "code": "7420Z",
+          "libelle": "Activités photographiques"
+        }
+      ],
+      "synonymes": [
+        "photographe",
+        "photographes",
+        "studio photo",
+        "studios photo"
+      ]
+    },
+    {
+      "id": "evenementiel",
+      "label": "Salons et congrès",
+      "naf": [
+        {
+          "code": "8230Z",
+          "libelle": "Organisation de foires, salons professionnels et congrès"
+        }
+      ],
+      "synonymes": [
+        "organisateur de salons",
+        "organisateurs de salons",
+        "salon professionnel",
+        "salons professionnels",
+        "evenementiel"
+      ]
+    },
+    {
+      "id": "imprimeries",
+      "label": "Imprimeries",
+      "naf": [
+        {
+          "code": "1812Z",
+          "libelle": "Autre imprimerie (labeur)"
+        }
+      ],
+      "synonymes": [
+        "imprimerie",
+        "imprimeries",
+        "imprimeur",
+        "imprimeurs"
+      ]
+    }
+  ],
+  "departements": [
+    {
+      "code": "01",
+      "nom": "Ain",
+      "region": "84"
+    },
+    {
+      "code": "02",
+      "nom": "Aisne",
+      "region": "32"
+    },
+    {
+      "code": "03",
+      "nom": "Allier",
+      "region": "84"
+    },
+    {
+      "code": "04",
+      "nom": "Alpes-de-Haute-Provence",
+      "region": "93"
+    },
+    {
+      "code": "05",
+      "nom": "Hautes-Alpes",
+      "region": "93"
+    },
+    {
+      "code": "06",
+      "nom": "Alpes-Maritimes",
+      "region": "93"
+    },
+    {
+      "code": "07",
+      "nom": "Ardèche",
+      "region": "84"
+    },
+    {
+      "code": "08",
+      "nom": "Ardennes",
+      "region": "44"
+    },
+    {
+      "code": "09",
+      "nom": "Ariège",
+      "region": "76"
+    },
+    {
+      "code": "10",
+      "nom": "Aube",
+      "region": "44"
+    },
+    {
+      "code": "11",
+      "nom": "Aude",
+      "region": "76"
+    },
+    {
+      "code": "12",
+      "nom": "Aveyron",
+      "region": "76"
+    },
+    {
+      "code": "13",
+      "nom": "Bouches-du-Rhône",
+      "region": "93"
+    },
+    {
+      "code": "14",
+      "nom": "Calvados",
+      "region": "28"
+    },
+    {
+      "code": "15",
+      "nom": "Cantal",
+      "region": "84"
+    },
+    {
+      "code": "16",
+      "nom": "Charente",
+      "region": "75"
+    },
+    {
+      "code": "17",
+      "nom": "Charente-Maritime",
+      "region": "75"
+    },
+    {
+      "code": "18",
+      "nom": "Cher",
+      "region": "24"
+    },
+    {
+      "code": "19",
+      "nom": "Corrèze",
+      "region": "75"
+    },
+    {
+      "code": "21",
+      "nom": "Côte-d'Or",
+      "region": "27"
+    },
+    {
+      "code": "22",
+      "nom": "Côtes-d'Armor",
+      "region": "53"
+    },
+    {
+      "code": "23",
+      "nom": "Creuse",
+      "region": "75"
+    },
+    {
+      "code": "24",
+      "nom": "Dordogne",
+      "region": "75"
+    },
+    {
+      "code": "25",
+      "nom": "Doubs",
+      "region": "27"
+    },
+    {
+      "code": "26",
+      "nom": "Drôme",
+      "region": "84"
+    },
+    {
+      "code": "27",
+      "nom": "Eure",
+      "region": "28"
+    },
+    {
+      "code": "28",
+      "nom": "Eure-et-Loir",
+      "region": "24"
+    },
+    {
+      "code": "29",
+      "nom": "Finistère",
+      "region": "53"
+    },
+    {
+      "code": "2A",
+      "nom": "Corse-du-Sud",
+      "region": "94"
+    },
+    {
+      "code": "2B",
+      "nom": "Haute-Corse",
+      "region": "94"
+    },
+    {
+      "code": "30",
+      "nom": "Gard",
+      "region": "76"
+    },
+    {
+      "code": "31",
+      "nom": "Haute-Garonne",
+      "region": "76"
+    },
+    {
+      "code": "32",
+      "nom": "Gers",
+      "region": "76"
+    },
+    {
+      "code": "33",
+      "nom": "Gironde",
+      "region": "75"
+    },
+    {
+      "code": "34",
+      "nom": "Hérault",
+      "region": "76"
+    },
+    {
+      "code": "35",
+      "nom": "Ille-et-Vilaine",
+      "region": "53"
+    },
+    {
+      "code": "36",
+      "nom": "Indre",
+      "region": "24"
+    },
+    {
+      "code": "37",
+      "nom": "Indre-et-Loire",
+      "region": "24"
+    },
+    {
+      "code": "38",
+      "nom": "Isère",
+      "region": "84"
+    },
+    {
+      "code": "39",
+      "nom": "Jura",
+      "region": "27"
+    },
+    {
+      "code": "40",
+      "nom": "Landes",
+      "region": "75"
+    },
+    {
+      "code": "41",
+      "nom": "Loir-et-Cher",
+      "region": "24"
+    },
+    {
+      "code": "42",
+      "nom": "Loire",
+      "region": "84"
+    },
+    {
+      "code": "43",
+      "nom": "Haute-Loire",
+      "region": "84"
+    },
+    {
+      "code": "44",
+      "nom": "Loire-Atlantique",
+      "region": "52"
+    },
+    {
+      "code": "45",
+      "nom": "Loiret",
+      "region": "24"
+    },
+    {
+      "code": "46",
+      "nom": "Lot",
+      "region": "76"
+    },
+    {
+      "code": "47",
+      "nom": "Lot-et-Garonne",
+      "region": "75"
+    },
+    {
+      "code": "48",
+      "nom": "Lozère",
+      "region": "76"
+    },
+    {
+      "code": "49",
+      "nom": "Maine-et-Loire",
+      "region": "52"
+    },
+    {
+      "code": "50",
+      "nom": "Manche",
+      "region": "28"
+    },
+    {
+      "code": "51",
+      "nom": "Marne",
+      "region": "44"
+    },
+    {
+      "code": "52",
+      "nom": "Haute-Marne",
+      "region": "44"
+    },
+    {
+      "code": "53",
+      "nom": "Mayenne",
+      "region": "52"
+    },
+    {
+      "code": "54",
+      "nom": "Meurthe-et-Moselle",
+      "region": "44"
+    },
+    {
+      "code": "55",
+      "nom": "Meuse",
+      "region": "44"
+    },
+    {
+      "code": "56",
+      "nom": "Morbihan",
+      "region": "53"
+    },
+    {
+      "code": "57",
+      "nom": "Moselle",
+      "region": "44"
+    },
+    {
+      "code": "58",
+      "nom": "Nièvre",
+      "region": "27"
+    },
+    {
+      "code": "59",
+      "nom": "Nord",
+      "region": "32"
+    },
+    {
+      "code": "60",
+      "nom": "Oise",
+      "region": "32"
+    },
+    {
+      "code": "61",
+      "nom": "Orne",
+      "region": "28"
+    },
+    {
+      "code": "62",
+      "nom": "Pas-de-Calais",
+      "region": "32"
+    },
+    {
+      "code": "63",
+      "nom": "Puy-de-Dôme",
+      "region": "84"
+    },
+    {
+      "code": "64",
+      "nom": "Pyrénées-Atlantiques",
+      "region": "75"
+    },
+    {
+      "code": "65",
+      "nom": "Hautes-Pyrénées",
+      "region": "76"
+    },
+    {
+      "code": "66",
+      "nom": "Pyrénées-Orientales",
+      "region": "76"
+    },
+    {
+      "code": "67",
+      "nom": "Bas-Rhin",
+      "region": "44"
+    },
+    {
+      "code": "68",
+      "nom": "Haut-Rhin",
+      "region": "44"
+    },
+    {
+      "code": "69",
+      "nom": "Rhône",
+      "region": "84"
+    },
+    {
+      "code": "70",
+      "nom": "Haute-Saône",
+      "region": "27"
+    },
+    {
+      "code": "71",
+      "nom": "Saône-et-Loire",
+      "region": "27"
+    },
+    {
+      "code": "72",
+      "nom": "Sarthe",
+      "region": "52"
+    },
+    {
+      "code": "73",
+      "nom": "Savoie",
+      "region": "84"
+    },
+    {
+      "code": "74",
+      "nom": "Haute-Savoie",
+      "region": "84"
+    },
+    {
+      "code": "75",
+      "nom": "Paris",
+      "region": "11"
+    },
+    {
+      "code": "76",
+      "nom": "Seine-Maritime",
+      "region": "28"
+    },
+    {
+      "code": "77",
+      "nom": "Seine-et-Marne",
+      "region": "11"
+    },
+    {
+      "code": "78",
+      "nom": "Yvelines",
+      "region": "11"
+    },
+    {
+      "code": "79",
+      "nom": "Deux-Sèvres",
+      "region": "75"
+    },
+    {
+      "code": "80",
+      "nom": "Somme",
+      "region": "32"
+    },
+    {
+      "code": "81",
+      "nom": "Tarn",
+      "region": "76"
+    },
+    {
+      "code": "82",
+      "nom": "Tarn-et-Garonne",
+      "region": "76"
+    },
+    {
+      "code": "83",
+      "nom": "Var",
+      "region": "93"
+    },
+    {
+      "code": "84",
+      "nom": "Vaucluse",
+      "region": "93"
+    },
+    {
+      "code": "85",
+      "nom": "Vendée",
+      "region": "52"
+    },
+    {
+      "code": "86",
+      "nom": "Vienne",
+      "region": "75"
+    },
+    {
+      "code": "87",
+      "nom": "Haute-Vienne",
+      "region": "75"
+    },
+    {
+      "code": "88",
+      "nom": "Vosges",
+      "region": "44"
+    },
+    {
+      "code": "89",
+      "nom": "Yonne",
+      "region": "27"
+    },
+    {
+      "code": "90",
+      "nom": "Territoire de Belfort",
+      "region": "27"
+    },
+    {
+      "code": "91",
+      "nom": "Essonne",
+      "region": "11"
+    },
+    {
+      "code": "92",
+      "nom": "Hauts-de-Seine",
+      "region": "11"
+    },
+    {
+      "code": "93",
+      "nom": "Seine-Saint-Denis",
+      "region": "11"
+    },
+    {
+      "code": "94",
+      "nom": "Val-de-Marne",
+      "region": "11"
+    },
+    {
+      "code": "95",
+      "nom": "Val-d'Oise",
+      "region": "11"
+    },
+    {
+      "code": "971",
+      "nom": "Guadeloupe",
+      "region": "01"
+    },
+    {
+      "code": "972",
+      "nom": "Martinique",
+      "region": "02"
+    },
+    {
+      "code": "973",
+      "nom": "Guyane",
+      "region": "03"
+    },
+    {
+      "code": "974",
+      "nom": "La Réunion",
+      "region": "04"
+    },
+    {
+      "code": "976",
+      "nom": "Mayotte",
+      "region": "06"
+    }
+  ],
+  "regions": [
+    {
+      "code": "11",
+      "nom": "Île-de-France",
+      "departements": [
+        "75",
+        "77",
+        "78",
+        "91",
+        "92",
+        "93",
+        "94",
+        "95"
+      ],
+      "synonymes": [
+        "idf",
+        "region parisienne"
+      ]
+    },
+    {
+      "code": "24",
+      "nom": "Centre-Val de Loire",
+      "departements": [
+        "18",
+        "28",
+        "36",
+        "37",
+        "41",
+        "45"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "27",
+      "nom": "Bourgogne-Franche-Comté",
+      "departements": [
+        "21",
+        "25",
+        "39",
+        "58",
+        "70",
+        "71",
+        "89",
+        "90"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "28",
+      "nom": "Normandie",
+      "departements": [
+        "14",
+        "27",
+        "50",
+        "61",
+        "76"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "32",
+      "nom": "Hauts-de-France",
+      "departements": [
+        "02",
+        "59",
+        "60",
+        "62",
+        "80"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "44",
+      "nom": "Grand Est",
+      "departements": [
+        "08",
+        "10",
+        "51",
+        "52",
+        "54",
+        "55",
+        "57",
+        "67",
+        "68",
+        "88"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "52",
+      "nom": "Pays de la Loire",
+      "departements": [
+        "44",
+        "49",
+        "53",
+        "72",
+        "85"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "53",
+      "nom": "Bretagne",
+      "departements": [
+        "22",
+        "29",
+        "35",
+        "56"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "75",
+      "nom": "Nouvelle-Aquitaine",
+      "departements": [
+        "16",
+        "17",
+        "19",
+        "23",
+        "24",
+        "33",
+        "40",
+        "47",
+        "64",
+        "79",
+        "86",
+        "87"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "76",
+      "nom": "Occitanie",
+      "departements": [
+        "09",
+        "11",
+        "12",
+        "30",
+        "31",
+        "32",
+        "34",
+        "46",
+        "48",
+        "65",
+        "66",
+        "81",
+        "82"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "84",
+      "nom": "Auvergne-Rhône-Alpes",
+      "departements": [
+        "01",
+        "03",
+        "07",
+        "15",
+        "26",
+        "38",
+        "42",
+        "43",
+        "63",
+        "69",
+        "73",
+        "74"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "93",
+      "nom": "Provence-Alpes-Côte d'Azur",
+      "departements": [
+        "04",
+        "05",
+        "06",
+        "13",
+        "83",
+        "84"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "94",
+      "nom": "Corse",
+      "departements": [
+        "2A",
+        "2B"
+      ],
+      "synonymes": [
+        "corse"
+      ]
+    },
+    {
+      "code": "01",
+      "nom": "Guadeloupe",
+      "departements": [
+        "971"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "02",
+      "nom": "Martinique",
+      "departements": [
+        "972"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "03",
+      "nom": "Guyane",
+      "departements": [
+        "973"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "04",
+      "nom": "La Réunion",
+      "departements": [
+        "974"
+      ],
+      "synonymes": []
+    },
+    {
+      "code": "06",
+      "nom": "Mayotte",
+      "departements": [
+        "976"
+      ],
+      "synonymes": []
+    }
+  ],
+  "zones": [
+    {
+      "id": "petite-couronne",
+      "label": "Petite couronne",
+      "departements": [
+        "92",
+        "93",
+        "94"
+      ],
+      "synonymes": [
+        "petite couronne",
+        "proche couronne",
+        "premiere couronne"
+      ]
+    },
+    {
+      "id": "grande-couronne",
+      "label": "Grande couronne",
+      "departements": [
+        "77",
+        "78",
+        "91",
+        "95"
+      ],
+      "synonymes": [
+        "grande couronne"
+      ]
+    }
+  ],
+  "villes": [
+    {
+      "nom": "Paris",
+      "departement": "75"
+    },
+    {
+      "nom": "Marseille",
+      "departement": "13"
+    },
+    {
+      "nom": "Lyon",
+      "departement": "69"
+    },
+    {
+      "nom": "Toulouse",
+      "departement": "31"
+    },
+    {
+      "nom": "Nice",
+      "departement": "06"
+    },
+    {
+      "nom": "Nantes",
+      "departement": "44"
+    },
+    {
+      "nom": "Montpellier",
+      "departement": "34"
+    },
+    {
+      "nom": "Strasbourg",
+      "departement": "67"
+    },
+    {
+      "nom": "Bordeaux",
+      "departement": "33"
+    },
+    {
+      "nom": "Lille",
+      "departement": "59"
+    },
+    {
+      "nom": "Rennes",
+      "departement": "35"
+    },
+    {
+      "nom": "Reims",
+      "departement": "51"
+    },
+    {
+      "nom": "Toulon",
+      "departement": "83"
+    },
+    {
+      "nom": "Saint-Étienne",
+      "departement": "42"
+    },
+    {
+      "nom": "Le Havre",
+      "departement": "76"
+    },
+    {
+      "nom": "Grenoble",
+      "departement": "38"
+    },
+    {
+      "nom": "Dijon",
+      "departement": "21"
+    },
+    {
+      "nom": "Angers",
+      "departement": "49"
+    },
+    {
+      "nom": "Nîmes",
+      "departement": "30"
+    },
+    {
+      "nom": "Clermont-Ferrand",
+      "departement": "63"
+    },
+    {
+      "nom": "Aix-en-Provence",
+      "departement": "13"
+    },
+    {
+      "nom": "Brest",
+      "departement": "29"
+    },
+    {
+      "nom": "Tours",
+      "departement": "37"
+    },
+    {
+      "nom": "Limoges",
+      "departement": "87"
+    },
+    {
+      "nom": "Amiens",
+      "departement": "80"
+    },
+    {
+      "nom": "Metz",
+      "departement": "57"
+    },
+    {
+      "nom": "Besançon",
+      "departement": "25"
+    },
+    {
+      "nom": "Perpignan",
+      "departement": "66"
+    },
+    {
+      "nom": "Orléans",
+      "departement": "45"
+    },
+    {
+      "nom": "Rouen",
+      "departement": "76"
+    },
+    {
+      "nom": "Caen",
+      "departement": "14"
+    },
+    {
+      "nom": "Nancy",
+      "departement": "54"
+    }
+  ],
+  "tailles": [
+    {
+      "id": "tpe",
+      "label": "TPE (1–9 salariés)",
+      "min": 1,
+      "max": 9,
+      "synonymes": [
+        "tpe",
+        "tres petite entreprise",
+        "tres petites entreprises",
+        "micro entreprise",
+        "micro entreprises"
+      ]
+    },
+    {
+      "id": "petites",
+      "label": "Petites entreprises (10–49 salariés)",
+      "min": 10,
+      "max": 49,
+      "synonymes": [
+        "petite entreprise",
+        "petites entreprises"
+      ]
+    },
+    {
+      "id": "pme",
+      "label": "PME (10–249 salariés)",
+      "min": 10,
+      "max": 249,
+      "synonymes": [
+        "pme",
+        "pmi",
+        "petites et moyennes entreprises"
+      ]
+    },
+    {
+      "id": "eti",
+      "label": "ETI (250–4 999 salariés)",
+      "min": 250,
+      "max": 4999,
+      "synonymes": [
+        "eti",
+        "entreprise de taille intermediaire",
+        "entreprises de taille intermediaire"
+      ]
+    }
+  ]
+}

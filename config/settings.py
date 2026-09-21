@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     claude_scoring_model: str = "claude-haiku-4-5"
 
+    # « Affiner avec l'IA » du lanceur de campagne (POST /api/icp/parse) : traduit les
+    # mots que le parseur déterministe du front n'a pas su mapper. Payant à chaque clic →
+    # DÉSACTIVÉ par défaut ; activer explicitement (ICP_PARSE_LLM_ENABLED=true) en prod.
+    icp_parse_llm_enabled: bool = False
+    claude_icp_parse_model: str = "claude-haiku-4-5"
+
     # ---------- APIs collecte ----------
     insee_api_key: str = ""  # api-sirene/3.11 (header X-INSEE-Api-Key-Integration)
     tavily_api_key: str = ""  # enrichissement (#18) — auth Bearer, quota 1000/mois
