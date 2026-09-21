@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import {
@@ -37,6 +38,10 @@ const NAF_OPTIONS = [
 ];
 
 const Propspect = () => {
+  const { q } = Route.useSearch();
+  const navigate = useNavigate({ from: "/prospects/" });
+  const setQuery = (value: string) =>
+    navigate({ search: value.trim() ? { q: value } : {}, replace: true });
   const [contactableOnly, setContactableOnly] = useState(false);
   const [nafCode, setNafCode] = useState<string>("");
   const [departments, setDepartments] = useState<string[]>([]);
@@ -50,6 +55,7 @@ const Propspect = () => {
     setContactableOnly(false);
     setNafCode("");
     setDepartments([]);
+    setQuery("");
   };
 
   // Filtres appliqués en direct (pas de bouton "Appliquer").
@@ -57,6 +63,7 @@ const Propspect = () => {
     contactableOnly,
     departements: departments,
     codeNaf: nafCode || undefined,
+    query: q,
   };
 
   return (
@@ -74,6 +81,16 @@ const Propspect = () => {
               Filtrez la file d'appel selon les différents critères
             </FieldDescription>
             <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="prospect-search">Recherche</FieldLabel>
+                <Input
+                  id="prospect-search"
+                  type="search"
+                  value={q ?? ""}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Nom, ville ou code NAF"
+                />
+              </Field>
               <Field>
                 <label className="flex gap-2 items-center cursor-pointer text-sm">
                   <Checkbox
@@ -133,6 +150,10 @@ const Propspect = () => {
   );
 };
 
+type ProspectsSearch = { q?: string };
+
 export const Route = createFileRoute("/prospects/")({
+  validateSearch: (search: Record<string, unknown>): ProspectsSearch =>
+    typeof search.q === "string" && search.q.trim() ? { q: search.q } : {},
   component: Propspect,
 });

@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import {
   Table,
   TableBody,
@@ -31,6 +30,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getProspects } from "@/lib/api";
 import { prospectToCompanyData } from "@/lib/adapters";
+import { matchesQuery } from "@/lib/text";
 
 export interface CompanyData {
   id: string;
@@ -52,6 +52,8 @@ export interface ProspectFilters {
   contactableOnly?: boolean;
   departements?: string[];
   codeNaf?: string;
+  /** Recherche texte (nom, ville, NAF), sans casse ni accents. */
+  query?: string;
 }
 
 const prospectColumns: ColumnConfig[] = [
@@ -79,6 +81,11 @@ export const ProspectsTable = ({
   });
   // Filtres appliqués côté client sur l'ensemble chargé (#116).
   const rows = (page?.items ?? []).filter((p) => {
+    if (
+      filters?.query &&
+      !matchesQuery(filters.query, [p.nom_entreprise, p.ville, p.code_naf])
+    )
+      return false;
     if (filters?.contactableOnly && !(p.telephone || p.email)) return false;
     if (
       filters?.departements?.length &&
