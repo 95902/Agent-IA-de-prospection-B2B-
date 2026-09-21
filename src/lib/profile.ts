@@ -6,13 +6,10 @@ import { isKpiWindow, type KpiWindow } from "@/lib/kpiWindow";
  * nom / rôle / préférences vivent dans le navigateur. Toute lecture/écriture du
  * storage est protégée (navigation privée, storage bloqué) et retombe sur les défauts.
  */
-export type Density = "comfortable" | "compact";
-
 export type Profile = {
   name: string;
   role: string;
   kpiWindow: KpiWindow;
-  density: Density;
   /** Intensité de l'aurore, 0–100. */
   aurora: number;
   /** Derniers client / produit saisis dans le lanceur de campagne (pré-remplissage). */
@@ -26,7 +23,6 @@ export const DEFAULT_PROFILE: Profile = {
   name: "",
   role: "",
   kpiWindow: "all",
-  density: "comfortable",
   aurora: 60,
   dernierClient: "",
   dernierProduit: "",
@@ -52,7 +48,6 @@ export function parseProfile(raw: unknown): Profile {
     name: cleanText(r.name),
     role: cleanText(r.role),
     kpiWindow: isKpiWindow(r.kpiWindow) ? r.kpiWindow : DEFAULT_PROFILE.kpiWindow,
-    density: r.density === "compact" ? "compact" : "comfortable",
     aurora: r.aurora === undefined ? DEFAULT_PROFILE.aurora : clampAurora(r.aurora),
     dernierClient: cleanText(r.dernierClient),
     dernierProduit: cleanText(r.dernierProduit),

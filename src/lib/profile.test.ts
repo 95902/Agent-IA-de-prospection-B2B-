@@ -28,14 +28,12 @@ describe("parseProfile", () => {
       name: "  Marie Curie  ",
       role: 42,
       kpiWindow: "90",
-      density: "compact",
       aurora: 250,
     });
     expect(p).toEqual({
       name: "Marie Curie",
       role: "",
       kpiWindow: DEFAULT_PROFILE.kpiWindow,
-      density: "compact",
       aurora: 100,
       dernierClient: "",
       dernierProduit: "",

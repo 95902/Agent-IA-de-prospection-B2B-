@@ -1,4 +1,5 @@
-import { Check, History } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, Check, History } from "lucide-react";
 import { EmptyState, ErrorState } from "@/components/States";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatInt, formatPct, ratio } from "@/lib/format";
@@ -109,6 +110,15 @@ export const ActionableHero = ({
             </span>
           )}
         </div>
+        {actionable > 0 && (
+          <Link
+            to="/prospects"
+            search={{ qualifies: true, joignables: true }}
+            className="mt-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brand hover:underline"
+          >
+            Voir les prospects actionnables <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        )}
       </>
     );
   }
