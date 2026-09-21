@@ -28,6 +28,32 @@ from utils import db
 _COUT_CLAUDE_EUR = 0.002
 _COUT_TAVILY_EUR = 0.0
 
+# Seuil de qualification : miroir de agents/scoring_agent._SEUIL_QUALIFIE (test de
+# cohérence dans tests/test_api_actionnables.py — pas d'import pour garder l'API légère).
+_SEUIL_QUALIFIE = 60
+
+# Joignable = email OU téléphone non vide (le site seul ne permet pas de contacter).
+# Actionnable = qualifié (score >= seuil) ET joignable : le KPI cœur produit.
+_JOIGNABLE_SQL = (
+    "(NULLIF(btrim(email), '') IS NOT NULL OR NULLIF(btrim(telephone), '') IS NOT NULL)"
+)
+_ACTIONNABLE_SQL = f"(score_final >= {_SEUIL_QUALIFIE} AND {_JOIGNABLE_SQL})"
+
+# Campagnes + compteurs calculés sur `prospects` : le pipeline n'incrémente jamais
+# `campagnes.prospects_collectes` (resté à 0 hors pilote), le COUNT est la vérité.
+_CAMPAGNE_SQL = f"""
+    SELECT c.id, c.nom, c.statut,
+           COALESCE(s.collectes, 0) AS prospects_collectes,
+           c.prospects_qualifies,
+           COALESCE(s.actionnables, 0) AS actionnables
+    FROM campagnes c
+    LEFT JOIN LATERAL (
+        SELECT count(*) AS collectes,
+               count(*) FILTER (WHERE {_ACTIONNABLE_SQL}) AS actionnables
+        FROM prospects WHERE campagne_id = c.id
+    ) s ON TRUE
+"""
+
 # Statuts autorisés pour le filtre (garde l'entrée utilisateur).
 _STATUTS = {"nouveau", "qualifie", "en_attente_appel", "appele", "rdv",
             "refus", "absent", "invalide"}
@@ -68,20 +94,14 @@ async def health() -> dict[str, str]:
 @app.get("/api/campagnes", response_model=list[CampagneDTO])
 async def list_campagnes():
     pool = await db.get_pg_pool()
-    rows = await pool.fetch(
-        "SELECT id, nom, statut, prospects_collectes, prospects_qualifies "
-        "FROM campagnes ORDER BY nom"
-    )
+    rows = await pool.fetch(_CAMPAGNE_SQL + " ORDER BY c.nom")
     return [dict(r) for r in rows]
 
 
 @app.get("/api/campagnes/{campagne_id}", response_model=CampagneDTO)
 async def get_campagne(campagne_id: UUID):
     pool = await db.get_pg_pool()
-    row = await pool.fetchrow(
-        "SELECT id, nom, statut, prospects_collectes, prospects_qualifies "
-        "FROM campagnes WHERE id = $1", campagne_id,
-    )
+    row = await pool.fetchrow(_CAMPAGNE_SQL + " WHERE c.id = $1", campagne_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Campagne introuvable")
     return dict(row)
@@ -164,7 +184,10 @@ async def kpis(campagne_id: UUID | None = None, since_days: int = Query(7, ge=1)
           count(*) FILTER (WHERE statut = 'qualifie') AS qualifies,
           count(*) FILTER (WHERE telephone IS NOT NULL AND telephone <> '') AS avec_tel,
           count(*) FILTER (WHERE email IS NOT NULL AND email <> '') AS avec_email,
-          avg(score_final) FILTER (WHERE statut = 'qualifie') AS smq
+          avg(score_final) FILTER (WHERE statut = 'qualifie') AS smq,
+          count(*) FILTER (WHERE score_final >= {_SEUIL_QUALIFIE}) AS qualifies_score,
+          count(*) FILTER (WHERE {_JOIGNABLE_SQL}) AS joignables,
+          count(*) FILTER (WHERE {_ACTIONNABLE_SQL}) AS actionnables
         FROM prospects WHERE {where}
         """,
         *params,
@@ -177,6 +200,10 @@ async def kpis(campagne_id: UUID | None = None, since_days: int = Query(7, ge=1)
         pct_qualifies=pct(r["qualifies"]),
         score_moy_qualifies=(round(r["smq"], 1) if r["smq"] is not None else None),
         cout_estime_eur=round(n * (_COUT_CLAUDE_EUR + _COUT_TAVILY_EUR), 3),
+        qualifies_score=r["qualifies_score"] or 0,
+        joignables=r["joignables"] or 0,
+        actionnables=r["actionnables"] or 0,
+        pct_actionnables=pct(r["actionnables"]),
     )
 
 

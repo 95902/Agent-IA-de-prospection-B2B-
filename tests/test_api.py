@@ -58,3 +58,19 @@ def test_kpis_shape(client):
     assert r.status_code == 200
     k = r.json()
     assert {"collectes", "qualifies", "taux_tel", "taux_email", "pct_qualifies"} <= k.keys()
+
+
+def test_kpis_actionnables_invariants(client):
+    """actionnables ⊆ qualifiés (score ≥ 60) ⊆ collectés, et ⊆ joignables."""
+    k = client.get("/api/kpis", params={"since_days": 36500}).json()
+    assert {"qualifies_score", "joignables", "actionnables", "pct_actionnables"} <= k.keys()
+    assert 0 <= k["actionnables"] <= k["qualifies_score"] <= k["collectes"]
+    assert k["actionnables"] <= k["joignables"] <= k["collectes"]
+
+
+def test_campagnes_collectes_egal_nombre_de_prospects(client):
+    """prospects_collectes est calculé : il doit égaler le total de /api/prospects."""
+    for c in client.get("/api/campagnes").json()[:3]:
+        page = client.get("/api/prospects", params={"campagne_id": c["id"], "limit": 1}).json()
+        assert c["prospects_collectes"] == page["total"]
+        assert 0 <= c["actionnables"] <= c["prospects_collectes"]
