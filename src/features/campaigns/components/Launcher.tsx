@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Info, Lightbulb, Sparkles } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { postCampagne } from "@/lib/api";
+import { getIcpParseStatus, postCampagne, postIcpParse } from "@/lib/api";
 import { updateProfile, useProfile } from "@/lib/profile";
+import { mergeAiResult } from "../nl/merge";
 import { parseTarget } from "../nl/parse";
 import { buildPayload, campaignName, toIcpPayload, validate } from "../nl/payload";
 import type { Criteria } from "../nl/types";
@@ -59,6 +60,38 @@ export const Launcher = () => {
   const meta = { client, produit, description: analysed ?? text, nom };
   const errors = criteria ? validate(criteria, meta) : [];
 
+  // « Affiner avec l'IA » : visible seulement si le serveur l'a activé (sinon 404/false).
+  const aiStatus = useQuery({
+    queryKey: ["icp-parse-status"],
+    queryFn: getIcpParseStatus,
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+  const refine = useMutation({
+    mutationFn: () => postIcpParse({ phrase: analysed ?? text, non_traduits: unmapped }),
+    onSuccess: (r) => {
+      if (!criteria) return;
+      const merged = mergeAiResult(criteria, r);
+      setCriteria(merged.criteria);
+      setUnmapped(merged.unmapped);
+      setAssumptions((prev) => [...prev, ...merged.hypotheses]);
+    },
+  });
+  const aiAction =
+    aiStatus.data?.enabled && unmapped.length > 0 ? (
+      <button
+        type="button"
+        onClick={() => refine.mutate()}
+        disabled={refine.isPending || analysed !== text.trim()}
+        title={analysed !== text.trim() ? "Analysez d'abord la phrase modifiée" : `Modèle : ${aiStatus.data.modele}`}
+        className="inline-flex h-9 items-center gap-2 rounded-[10px] border bg-glass-card px-3 text-[13px] font-medium transition-colors hover:border-brand/40 disabled:opacity-50"
+      >
+        <Sparkles className="size-4 text-brand" aria-hidden="true" />
+        {refine.isPending ? "Analyse IA…" : "Affiner avec l'IA"}
+        <span className="font-mono text-[11px] text-muted-foreground">≈ 0,004 €</span>
+      </button>
+    ) : undefined;
+
   const create = useMutation({
     mutationFn: () => postCampagne(toIcpPayload(criteria!, meta)),
     onSuccess: () => {
@@ -92,6 +125,7 @@ export const Launcher = () => {
             size="lg"
             onClick={() => {
               create.reset();
+              refine.reset();
               setText("");
               setAnalysed(null);
               setCriteria(null);
@@ -191,7 +225,13 @@ export const Launcher = () => {
             unmapped={unmapped}
             onUnmappedChange={setUnmapped}
             assumptions={assumptions}
+            aiAction={aiAction}
           />
+          {refine.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              L'affinage IA a échoué : {(refine.error as Error).message}. Les critères actuels sont conservés.
+            </p>
+          )}
 
           {(criteria.effectif?.min ?? 0) < 10 && (
             <div className="flex items-start gap-3 rounded-2xl bg-brand-soft px-4 py-3.5 text-sm">

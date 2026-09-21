@@ -145,3 +145,31 @@ export const postCampagne = (payload: Record<string, unknown>) =>
     "/api/campagnes",
     payload,
   );
+
+// --- « Affiner avec l'IA » (PR API #134) -------------------------------------
+// Absent tant que l'API n'est pas à jour : le statut répond 404 et le bouton reste caché.
+export interface IcpParseStatus {
+  enabled: boolean;
+  modele: string;
+}
+
+export interface IcpParseResult {
+  codes_naf: string[];
+  departements: string[];
+  effectif_min: number | null;
+  effectif_max: number | null;
+  anciennete_min_ans: number | null;
+  exiger_site_web: boolean;
+  exiger_email: boolean;
+  mots_cles_positifs: string[];
+  mots_cles_negatifs: string[];
+  non_traduits: string[];
+  hypotheses: string[];
+  modele: string;
+  depuis_cache: boolean;
+}
+
+export const getIcpParseStatus = () => apiGet<IcpParseStatus>("/api/icp/parse/status");
+
+export const postIcpParse = (body: { phrase: string; non_traduits: string[] }) =>
+  apiPost<IcpParseResult>("/api/icp/parse", body);

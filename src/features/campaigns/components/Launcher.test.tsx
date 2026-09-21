@@ -45,6 +45,8 @@ beforeEach(() => {
   resetProfileCache();
   sessionStorage.clear();
   vi.restoreAllMocks();
+  // Jamais de réseau en test : par défaut le service IA est absent (API sans #134).
+  vi.spyOn(api, "getIcpParseStatus").mockRejectedValue(new Error("API 404"));
 });
 
 describe("Launcher", () => {
@@ -118,5 +120,55 @@ describe("Launcher", () => {
     expect(screen.getByText("Restaurants")).toBeInTheDocument();
     expect(screen.getByText("69 · Rhône")).toBeInTheDocument();
     expect(screen.getByText(/ciblage sur tout le département 69/)).toBeInTheDocument();
+  });
+});
+
+describe("Launcher — « Affiner avec l'IA »", () => {
+  const PHRASE_IA = "Hôtels indépendants à Paris";
+
+  it("reste caché tant que le serveur ne l'active pas", async () => {
+    renderLauncher();
+    await analyse(PHRASE_IA);
+    expect(screen.getByText("« indépendants »")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Affiner avec l'IA/ })).not.toBeInTheDocument();
+  });
+
+  it("envoie les mots non traduits et fusionne la proposition", async () => {
+    vi.spyOn(api, "getIcpParseStatus").mockResolvedValue({ enabled: true, modele: "claude-haiku-4-5" });
+    const post = vi.spyOn(api, "postIcpParse").mockResolvedValue({
+      codes_naf: [],
+      departements: [],
+      effectif_min: null,
+      effectif_max: null,
+      anciennete_min_ans: null,
+      exiger_site_web: false,
+      exiger_email: false,
+      mots_cles_positifs: [],
+      mots_cles_negatifs: ["groupe", "franchise"],
+      non_traduits: [],
+      hypotheses: ["indépendants : exclusion des réseaux et franchises"],
+      modele: "claude-haiku-4-5",
+      depuis_cache: false,
+    });
+    renderLauncher();
+    await analyse(PHRASE_IA);
+    fireEvent.click(await screen.findByRole("button", { name: /Affiner avec l'IA/ }));
+
+    expect(await screen.findByText("« groupe »")).toBeInTheDocument();
+    expect(screen.getByText("« franchise »")).toBeInTheDocument();
+    expect(screen.queryByText("« indépendants »")).not.toBeInTheDocument();
+    expect(screen.getByText("IA : indépendants : exclusion des réseaux et franchises")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith({ phrase: PHRASE_IA, non_traduits: ["indépendants"] });
+  });
+
+  it("garde les critères si l'IA échoue", async () => {
+    vi.spyOn(api, "getIcpParseStatus").mockResolvedValue({ enabled: true, modele: "claude-haiku-4-5" });
+    vi.spyOn(api, "postIcpParse").mockRejectedValue(new Error("API 503 Service Unavailable"));
+    renderLauncher();
+    await analyse(PHRASE_IA);
+    fireEvent.click(await screen.findByRole("button", { name: /Affiner avec l'IA/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("API 503");
+    expect(screen.getByText("75 · Paris")).toBeInTheDocument();
+    expect(screen.getByText("« indépendants »")).toBeInTheDocument();
   });
 });
